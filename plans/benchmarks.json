@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": null,
+      "plan_id": "medium-04",
+      "title": "Faster TSV parsing at startup",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 39935.86,
+      "hot_loop_seconds": 1.252,
+      "wall_seconds": 22.416,
+      "startup_seconds": 21.164,
+      "delta_vs_previous": "-1.8%",
+      "notes": "Byte-level TSV parse with 1MB scanner buffer and 32M slice capacity. Parse 3.74s, sort 17.22s. Startup -25% vs low-04. Loaded count unchanged: 31,733,986."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "a1ac01e",
       "plan_id": "low-04",
       "title": "Default thread count to CPU count",

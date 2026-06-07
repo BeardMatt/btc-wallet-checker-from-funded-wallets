@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"btcfind/bitcoin"
@@ -87,6 +86,7 @@ func newWallet(n int) chan bitcoin.Wallet {
 
 func loadFunded() []string {
 	fmt.Println("Loading funded wallets...")
+	loadStart := time.Now()
 
 	file, err := os.Open("funded.tsv")
 	if err != nil {
@@ -95,38 +95,33 @@ func loadFunded() []string {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
+	buf := make([]byte, 0, 1024*1024)
+	scanner.Buffer(buf, 10*1024*1024)
 
-	// Skip header line
 	if scanner.Scan() {
 		// header consumed
 	}
 
-	funded := make([]string, 0, 1000000)
+	funded := make([]string, 0, 32_000_000)
 
 	for scanner.Scan() {
-		line := scanner.Text()
-		spl := strings.Split(line, "\t")
-
-		if len(spl) < 2 {
+		addr, balance, ok := parseTSVLine(scanner.Bytes())
+		if !ok || balance < 30000 {
 			continue
 		}
-
-		balance, err := strconv.Atoi(spl[1])
-		if err != nil {
-			continue
-		}
-
-		if balance >= 30000 {
-			funded = append(funded, spl[0])
-		}
+		funded = append(funded, string(addr))
+	}
+	if err := scanner.Err(); err != nil {
+		panic(err)
 	}
 
 	printer := message.NewPrinter(language.English)
-	printer.Printf("Loaded %d wallets\n", len(funded))
+	printer.Printf("Loaded %d wallets in %.2fs\n", len(funded), time.Since(loadStart).Seconds())
 
 	fmt.Println("Sorting funded wallets...")
+	sortStart := time.Now()
 	sort.Strings(funded)
-	fmt.Println("Finished sorting funded wallets...")
+	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
 
 	return funded
 }

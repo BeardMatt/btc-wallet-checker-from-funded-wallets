@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `medium-04` |
 | **Priority** | Medium |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | 2–4× faster cold startup parse |
 

@@ -85,7 +85,7 @@
       "path": "medium/04-faster-tsv-parsing",
       "title": "Faster TSV parsing at startup",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "2-4x faster cold startup parse"
     },
