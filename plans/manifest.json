@@ -104,9 +104,9 @@
       "path": "low/02-gpu-secp256k1",
       "title": "GPU / assembly secp256k1",
       "priority": "low",
-      "status": "pending",
+      "status": "skipped",
       "depends_on": ["high-01", "medium-02"],
-      "estimated_gain": "Uncertain; keygen is not current bottleneck"
+      "estimated_gain": "Skipped — GPU/CGO not pursued; lazy taproot regressed"
     },
     {
       "id": "low-03",

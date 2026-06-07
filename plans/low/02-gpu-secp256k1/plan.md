@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-02` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `skipped` |
 | **Depends on** | `high-01`, `medium-02` |
 | **Estimated gain** | Uncertain; keygen likely not bottleneck after prior plans |
 
@@ -68,8 +68,28 @@ Only proceed to GPU if batch CPU keygen shows keygen > 50% of profile and batchi
 
 ## Verification
 
-- [ ] Profile proves keygen is bottleneck OR plan marked `skipped`
-- [ ] If implemented: measurable throughput gain on benchmark command
+- [x] Profile proves keygen is bottleneck (see results below)
+- [x] Plan marked `skipped` — GPU/CGO not implemented
+
+## Profile results (2026-06-07)
+
+CPU profile of hot loop (`BenchmarkHotLoopMatch`, 5s):
+
+| Component | Cumulative CPU |
+|-----------|----------------|
+| `GenKeypair` / `DeriveLookupKeys` | ~99% |
+| `ScalarBaseMult` (pubkey) | ~58% |
+| `ComputeTaprootKeyNoScript` | ~55% |
+| `Hash160` | ~3% |
+| Bloom / `matchFunded` | <1% |
+
+Keygen **is** the bottleneck, but:
+
+1. **btcec/v2 already uses optimized assembly** via `dcrd/secp256k1/v4` (field mul/square dominate profile).
+2. **Lazy taproot spike regressed ~2.6×** (54k → 21k keys/sec) because taproot EC work moved from parallel workers to the single consumer goroutine.
+3. **GPU** would require a full pipeline (keygen + Hash160 + bloom on CPU) for uncertain gain and high integration cost.
+
+**Decision:** Skip GPU/CGO. Further single-machine gains likely need architectural changes (e.g. worker-side keygen only, distributed search) not off-the-shelf secp256k1 libraries.
 
 ## Rollback
 
