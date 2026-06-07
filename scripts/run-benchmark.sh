@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Run the standard btcfind benchmark and print parseable metrics.
-# Usage: ./.grok/skills/benchmark/scripts/run-benchmark.sh
+# Usage: ./scripts/run-benchmark.sh
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
 go build -o btcfind . 2>&1
