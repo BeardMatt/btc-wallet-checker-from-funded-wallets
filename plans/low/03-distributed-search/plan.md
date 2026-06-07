@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-03` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `maybe` |
 | **Depends on** | `high-01`, `high-02` |
 | **Estimated gain** | Linear scale-out; not single-machine optimization |
 

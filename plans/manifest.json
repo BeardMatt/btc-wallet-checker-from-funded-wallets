@@ -113,7 +113,7 @@
       "path": "low/03-distributed-search",
       "title": "Distributed search across machines",
       "priority": "low",
-      "status": "pending",
+      "status": "maybe",
       "depends_on": ["high-01", "high-02"],
       "estimated_gain": "Linear scale-out; not single-machine optimization"
     },
@@ -131,7 +131,7 @@
       "path": "low/05-configurable-min-balance",
       "title": "Configurable minimum funded balance",
       "priority": "low",
-      "status": "pending",
+      "status": "maybe",
       "depends_on": [],
       "estimated_gain": "Transparency — expose 30k-sat filter; optional full funded set"
     }

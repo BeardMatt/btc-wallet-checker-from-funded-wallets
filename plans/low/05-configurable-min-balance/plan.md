@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-05` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `maybe` |
 | **Depends on** | none |
 | **Estimated gain** | Correctness / transparency — no hot-loop throughput change |
 

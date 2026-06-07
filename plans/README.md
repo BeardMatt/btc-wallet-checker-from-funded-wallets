@@ -52,7 +52,8 @@ Each plan has a `status` field in `manifest.json`:
 - `pending` — not started
 - `in_progress` — currently being worked on
 - `completed` — done and verified
-- `skipped` — intentionally deferred
+- `skipped` — evaluated and intentionally not pursued
+- `maybe` — under consideration for future work; not scheduled
 
 Update `status` in `manifest.json` as you complete each plan.
 
