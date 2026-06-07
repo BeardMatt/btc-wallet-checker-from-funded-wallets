@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
 	"sync"
 	"time"
@@ -105,12 +104,16 @@ func (s *FundedSets) BuildBlooms() {
 	}()
 	wg.Wait()
 
-	fmt.Println("Bloom filters:")
-	logBloomBucket("legacy", s.LegacyBloom, len(s.Legacy))
-	logBloomBucket("p2sh", s.P2SHBloom, len(s.P2SH))
-	logBloomBucket("segwit", s.SegwitV0Bloom, len(s.SegwitV0))
-	logBloomBucket("taproot", s.TaprootV1Bloom, len(s.TaprootV1))
-	fmt.Printf("Built bloom filters in %.2fs\n", time.Since(start).Seconds())
+	elapsed := time.Since(start)
+	u := ui()
+	u.LogBloomBuild(*s, elapsed)
+	if u.verbose {
+		u.PrintlnErr("Bloom filter details:")
+		logBloomBucket("legacy", s.LegacyBloom, len(s.Legacy))
+		logBloomBucket("p2sh", s.P2SHBloom, len(s.P2SH))
+		logBloomBucket("segwit", s.SegwitV0Bloom, len(s.SegwitV0))
+		logBloomBucket("taproot", s.TaprootV1Bloom, len(s.TaprootV1))
+	}
 }
 
 func buildBloom20(set [][20]byte) *bloom.BloomFilter {
@@ -140,8 +143,8 @@ func logBloomBucket(name string, bf *bloom.BloomFilter, entries int) {
 		return
 	}
 	fp := bloom.EstimateFalsePositiveRate(bf.Cap(), bf.K(), uint(entries))
-	fmt.Printf(
-		"  %s: %d entries, %d bits, %d hashes, est FP %.6f\n",
+	ui().PrintfErr(
+		"    %s: %d entries, %d bits, %d hashes, est FP %.6f\n",
 		name,
 		entries,
 		bf.Cap(),

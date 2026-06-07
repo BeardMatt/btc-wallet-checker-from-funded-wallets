@@ -8,9 +8,6 @@ import (
 	"time"
 
 	"btcfind/bitcoin"
-
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 )
 
 const keyBatchSize = 128
@@ -18,31 +15,40 @@ const keyBatchSize = 128
 func main() {
 	cfg, err := parseCLI(os.Args[1:])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		ui().PrintfErr("%v\n", err)
 		printUsage()
 		return
 	}
+
+	appUI = NewUI(UIConfig{
+		NoColor: cfg.noColor,
+		Quiet:   cfg.quiet,
+		Verbose: cfg.verbose,
+	})
 
 	workers := cfg.threads
 	if workers < 1 {
 		workers = runtime.NumCPU()
 	}
-	fmt.Printf("Using %d workers\n", workers)
+
+	appUI.Banner()
+	appUI.Section(fmt.Sprintf("Workers  %d", workers))
 	if cfg.simulateHit {
-		fmt.Printf("Simulate hit enabled at key %d\n", cfg.simulateHitAt)
+		appUI.Infof("  Simulate hit at key %d\n", cfg.simulateHitAt)
 	}
 	if cfg.injectIndexHit != "" {
-		fmt.Printf("Inject index hit enabled for bucket %q at key %d\n", cfg.injectIndexHit, cfg.simulateHitAt)
+		appUI.Infof("  Inject index hit: bucket=%q key=%d\n", cfg.injectIndexHit, cfg.simulateHitAt)
 	}
 
 	ensureFunded()
 	fundedSets := loadFunded()
 
-	printer := message.NewPrinter(language.English)
-	printer.Printf("Testing %d keys... ", cfg.numKeys)
+	appUI.Section("Search")
+	appUI.BeginSearch(cfg.numKeys)
 
 	start := time.Now()
 	ch := newWallet(workers)
+	lastProgress := time.Now()
 
 	processed := 0
 	for processed < cfg.numKeys {
@@ -59,13 +65,13 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				fmt.Printf("inject-index-hit: bucket=%s funded_address=%s\n", cfg.injectIndexHit, fundedAddr)
+				appUI.Infof("  inject-index-hit: bucket=%s funded_address=%s\n", cfg.injectIndexHit, fundedAddr)
 			}
 
 			kind, ok := matchFunded(fundedSets, keys)
 			if ok {
 				wallet.Keys = keys
-				printHit(wallet, kind, false)
+				appUI.PrintHit(wallet, kind, keyIndex, false)
 			}
 
 			if cfg.verifyLookup && keyIndex == cfg.simulateHitAt {
@@ -74,16 +80,21 @@ func main() {
 
 			if cfg.simulateHit && keyIndex == cfg.simulateHitAt && !ok {
 				wallet.Keys = keys
-				printHit(wallet, simulateDisplayKind(keys, kind, ok), true)
+				appUI.PrintHit(wallet, simulateDisplayKind(keys, kind, ok), keyIndex, true)
 			}
 
 			processed++
+		}
+
+		if time.Since(lastProgress) >= 100*time.Millisecond {
+			appUI.SearchProgress(processed, cfg.numKeys, time.Since(start))
+			lastProgress = time.Now()
 		}
 	}
 
 	took := time.Since(start)
 	avg := float64(cfg.numKeys) / took.Seconds()
-	fmt.Printf("Took %fs... Average %.2f keys per second\n", took.Seconds(), avg)
+	appUI.PrintSummary(took, cfg.numKeys, avg)
 }
 
 func newWallet(n int) chan []bitcoin.Wallet {
@@ -104,7 +115,6 @@ func newWallet(n int) chan []bitcoin.Wallet {
 }
 
 func loadFunded() FundedSets {
-	fmt.Println("Loading funded wallets...")
 	loadStart := time.Now()
 
 	tsvInfo, err := os.Stat("funded.tsv")
@@ -112,46 +122,53 @@ func loadFunded() FundedSets {
 		panic("couldn't stat funded.tsv")
 	}
 	srcMtime := tsvInfo.ModTime()
+	fileSize := tsvInfo.Size()
+
+	appUI.Section("Loading funded wallets")
 
 	if sets, err := readFundedCache(fundedCacheFile, srcMtime); err == nil {
 		if !sets.bloomsComplete() {
+			appUI.ProgressIndeterminate("Upgrading cache (building bloom filters)")
 			sets.ensureBlooms()
+			appUI.ClearProgress()
 			if err := writeFundedCache(fundedCacheFile, sets, srcMtime); err != nil {
-				fmt.Printf("Warning: could not upgrade cache: %v\n", err)
+				appUI.Warnf("could not upgrade cache: %v\n", err)
 			} else {
-				fmt.Println("Upgraded funded.cache to v2 (with bloom filters)")
+				appUI.Infof("  Upgraded funded.cache to v2 (with bloom filters)\n")
 			}
 		}
-		logFundedLoad(sets, loadStart, true)
+		appUI.LogFundedLoad(sets, time.Since(loadStart), true)
 		return sets
 	}
 
-	sets := parseFundedTSV()
-	fmt.Println("Sorting funded wallets...")
+	sets := parseFundedTSV(fileSize)
+	appUI.ProgressIndeterminate("Sorting funded wallets")
 	sortStart := time.Now()
 	sets.Sort()
-	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
+	appUI.ClearProgress()
+	appUI.Infof("  Sorted in %.2fs\n", time.Since(sortStart).Seconds())
 
 	sets.ensureBlooms()
 
 	if err := writeFundedCache(fundedCacheFile, sets, srcMtime); err != nil {
-		fmt.Printf("Warning: could not write cache: %v\n", err)
+		appUI.Warnf("could not write cache: %v\n", err)
 	} else {
-		fmt.Println("Wrote funded.cache")
+		appUI.Infof("  Wrote funded.cache\n")
 	}
 
-	logFundedLoad(sets, loadStart, false)
+	appUI.LogFundedLoad(sets, time.Since(loadStart), false)
 	return sets
 }
 
-func parseFundedTSV() FundedSets {
+func parseFundedTSV(fileSize int64) FundedSets {
 	file, err := os.Open("funded.tsv")
 	if err != nil {
 		panic("couldn't open funded.tsv")
 	}
 	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
+	counter := &byteCounter{r: file}
+	scanner := bufio.NewScanner(counter)
 	buf := make([]byte, 0, 1024*1024)
 	scanner.Buffer(buf, 10*1024*1024)
 
@@ -167,35 +184,22 @@ func parseFundedTSV() FundedSets {
 		Other:     make([]string, 0, 600_000),
 	}
 
+	lastProgress := time.Now()
 	for scanner.Scan() {
+		if time.Since(lastProgress) >= 200*time.Millisecond {
+			appUI.Progress("Parsing funded.tsv", counter.n, fileSize)
+			lastProgress = time.Now()
+		}
 		addr, balance, ok := parseTSVLine(scanner.Bytes())
 		if !ok || balance < 30000 {
 			continue
 		}
 		sets.addAddress(string(addr))
 	}
+	appUI.ClearProgress()
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
 
 	return sets
-}
-
-func logFundedLoad(sets FundedSets, loadStart time.Time, fromCache bool) {
-	printer := message.NewPrinter(language.English)
-	source := "parsed"
-	if fromCache {
-		source = "cache"
-	}
-	printer.Printf(
-		"Loaded %d wallets from %s in %.2fs (legacy=%d p2sh=%d segwit=%d taproot=%d other=%d)\n",
-		sets.Total(),
-		source,
-		time.Since(loadStart).Seconds(),
-		len(sets.Legacy),
-		len(sets.P2SH),
-		len(sets.SegwitV0),
-		len(sets.TaprootV1),
-		len(sets.Other),
-	)
 }

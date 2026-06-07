@@ -8,12 +8,15 @@ import (
 )
 
 type cliConfig struct {
-	numKeys          int
-	threads          int
-	simulateHit      bool
-	simulateHitAt    int
-	verifyLookup     bool
-	injectIndexHit   string
+	numKeys        int
+	threads        int
+	simulateHit    bool
+	simulateHitAt  int
+	verifyLookup   bool
+	injectIndexHit string
+	noColor        bool
+	quiet          bool
+	verbose        bool
 }
 
 func parseCLI(args []string) (cliConfig, error) {
@@ -27,6 +30,12 @@ func parseCLI(args []string) (cliConfig, error) {
 		switch {
 		case arg == "--simulate-hit":
 			cfg.simulateHit = true
+		case arg == "--no-color":
+			cfg.noColor = true
+		case arg == "--quiet":
+			cfg.quiet = true
+		case arg == "--verbose":
+			cfg.verbose = true
 		case arg == "--simulate-hit-verify-lookup":
 			cfg.verifyLookup = true
 		case strings.HasPrefix(arg, "--simulate-hit-at="):
@@ -111,4 +120,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  --simulate-hit-verify-lookup   Log whether wallet matches funded index")
 	fmt.Fprintln(os.Stderr, "  --inject-index-hit BUCKET        Replace wallet hash with index[0] from bucket")
 	fmt.Fprintln(os.Stderr, "                                 (legacy, legacy-uncompressed, p2sh, segwit, taproot)")
+	fmt.Fprintln(os.Stderr, "  --no-color                       Disable ANSI colors and live progress")
+	fmt.Fprintln(os.Stderr, "  --quiet                          Minimal startup output (hits and warnings only)")
+	fmt.Fprintln(os.Stderr, "  --verbose                        Verbose bloom filter details at load time")
 }

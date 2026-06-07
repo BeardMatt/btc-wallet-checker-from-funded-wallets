@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "6117518",
+      "plan_id": "low-07",
+      "title": "Output UX — pretty terminal, progress, wallet recovery",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 56167.67,
+      "hot_loop_seconds": 0.890192,
+      "wall_seconds": 1.748,
+      "startup_seconds": 0.858,
+      "delta_vs_previous": "+3.5%",
+      "notes": "Centralized UI layer, TTY progress, hit recovery banner. Hot-loop unchanged; delta is run variance."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "f067c65",
       "plan_id": "low-06",
       "title": "Simulate-hit flag for testing",

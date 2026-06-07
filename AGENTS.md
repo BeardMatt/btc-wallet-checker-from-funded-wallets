@@ -124,6 +124,18 @@ go build -o btcfind .
 | `--simulate-hit-verify-lookup` | Log per-bucket lookup results for key N |
 | `--inject-index-hit BUCKET` | Replace wallet hash with `index[0]` from bucket (`legacy`, `legacy-uncompressed`, `p2sh`, `segwit`, `taproot`) |
 
+### Output flags (optional)
+
+| Flag | Purpose |
+|------|---------|
+| `--no-color` | Plain text — no ANSI colors or live progress line |
+| `--quiet` | Minimal startup output (warnings and wallet hits only) |
+| `--verbose` | Per-bucket bloom filter details during load |
+
+On a TTY, the search phase shows a live `Testing N keys…` progress line on stderr. The benchmark line (`Took Xs... Average Y keys per second`) stays on stdout for `scripts/run-benchmark.sh`.
+
+When a wallet is found (or `--simulate-hit`), a framed banner on stderr shows the address, WIF, format, and step-by-step recovery instructions (Electrum, Sparrow, Bitcoin Core).
+
 Examples:
 
 ```bash

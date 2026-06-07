@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-07` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `low-06` |
 | **Estimated gain** | UX only — no hot-loop throughput change expected |
 
@@ -209,12 +209,12 @@ go build -o btcfind .
 ./scripts/run-benchmark.sh           # metrics still parse
 ```
 
-- [ ] Interactive run shows sectioned startup and live key progress
-- [ ] Non-TTY / `--no-color` has no ANSI artifacts
-- [ ] Hit banner shows WIF, address, format, key index, recovery steps
-- [ ] Simulated hit uses same banner with clear SIMULATED marker
-- [ ] `Average X keys per second` line unchanged for benchmark script
-- [ ] Standard benchmark throughput unchanged (±1% — UX must not add hot-loop work)
+- [x] Interactive run shows sectioned startup and live key progress
+- [x] Non-TTY / `--no-color` has no ANSI artifacts
+- [x] Hit banner shows WIF, address, format, key index, recovery steps
+- [x] Simulated hit uses same banner with clear SIMULATED marker
+- [x] `Average X keys per second` line unchanged for benchmark script
+- [x] Standard benchmark throughput unchanged (±1% — UX must not add hot-loop work)
 
 ## Rollback
 

@@ -44,7 +44,8 @@ func applyInjectIndexHit(sets FundedSets, keys *bitcoin.LookupKeys, bucket strin
 }
 
 func printLookupVerify(sets FundedSets, keys bitcoin.LookupKeys, realKind bitcoin.MatchKind, realHit bool) {
-	fmt.Printf(
+	u := ui()
+	u.Printf(
 		"lookup verify: legacy_compressed=%t legacy_uncompressed=%t segwit_v0=%t p2sh=%t taproot=%t real_match=%t",
 		lookupHit20(sets.LegacyBloom, sets.Legacy, keys.CompressedHash),
 		lookupHit20(sets.LegacyBloom, sets.Legacy, keys.UncompressedHash),
@@ -54,9 +55,9 @@ func printLookupVerify(sets FundedSets, keys bitcoin.LookupKeys, realKind bitcoi
 		realHit,
 	)
 	if realHit {
-		fmt.Printf(" kind=%s", matchKindName(realKind))
+		u.Printf(" kind=%s", matchKindName(realKind))
 	}
-	fmt.Println()
+	u.PrintlnErr("")
 }
 
 func lookupHit20(bf interface{ Test([]byte) bool }, set [][20]byte, key [20]byte) bool {
@@ -90,15 +91,3 @@ func matchKindName(kind bitcoin.MatchKind) string {
 	}
 }
 
-func printHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, simulated bool) {
-	addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
-	if addr == "" {
-		panic("failed to encode hit address")
-	}
-
-	prefix := ""
-	if simulated {
-		prefix = "(simulated hit) "
-	}
-	fmt.Println(prefix+formatWIF(wallet.PrivKey), " : ", addr)
-}

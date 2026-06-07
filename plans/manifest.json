@@ -151,7 +151,7 @@
       "path": "low/07-output-ux",
       "title": "Output UX — pretty terminal, progress, wallet recovery",
       "priority": "low",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["low-06"],
       "estimated_gain": "UX — structured output, live progress, hit recovery instructions"
     }

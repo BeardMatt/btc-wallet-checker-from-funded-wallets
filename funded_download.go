@@ -17,9 +17,10 @@ const (
 )
 
 func ensureFunded() {
+	u := ui()
 	info, err := os.Stat(fundedFile)
 	if os.IsNotExist(err) {
-		fmt.Println("funded.tsv not found, downloading...")
+		u.Section("Downloading funded.tsv")
 		if err := downloadFunded(); err != nil {
 			panic(err)
 		}
@@ -31,17 +32,17 @@ func ensureFunded() {
 
 	remoteMod, err := remoteLastModified()
 	if err != nil {
-		fmt.Printf("Warning: could not check for updates (%v), using local file\n", err)
+		u.Warnf("could not check for updates (%v), using local file\n", err)
 		return
 	}
 
 	if remoteMod.After(info.ModTime()) {
-		fmt.Printf(
+		u.PrintfErr(
 			"funded.tsv is out of date (local: %s, remote: %s)\n",
 			info.ModTime().Format(time.RFC3339),
 			remoteMod.Format(time.RFC3339),
 		)
-		fmt.Print("Download update? [y/N]: ")
+		u.PrintfErr("Download update? [y/N]: ")
 
 		reader := bufio.NewReader(os.Stdin)
 		answer, _ := reader.ReadString('\n')
@@ -53,7 +54,7 @@ func ensureFunded() {
 			return
 		}
 
-		fmt.Println("Using existing funded.tsv")
+		u.PrintlnErr("Using existing funded.tsv")
 	}
 }
 
@@ -83,8 +84,8 @@ func remoteLastModified() (time.Time, error) {
 }
 
 func downloadFunded() error {
-	fmt.Printf("Downloading %s\n", fundedDownloadURL)
-	fmt.Println("Decompressing to funded.tsv (this may take a while)...")
+	u := ui()
+	u.Infof("  Source: %s\n", fundedDownloadURL)
 
 	client := &http.Client{}
 	resp, err := client.Get(fundedDownloadURL)
@@ -110,6 +111,7 @@ func downloadFunded() error {
 	}
 
 	written, err := copyWithProgress(out, gz)
+	u.ClearProgress()
 	closeErr := out.Close()
 	if err != nil {
 		os.Remove(tmpFile)
@@ -131,7 +133,7 @@ func downloadFunded() error {
 
 	removeFundedCache()
 
-	fmt.Printf("Saved %s (%d bytes)\n", fundedFile, written)
+	u.Infof("  Saved %s (%s)\n", fundedFile, formatBytes(written))
 	return nil
 }
 
@@ -152,8 +154,8 @@ func copyWithProgress(dst io.Writer, src io.Reader) (int64, error) {
 				return written, io.ErrShortWrite
 			}
 
-			if time.Since(lastReport) >= 5*time.Second {
-				fmt.Printf("  ... %d MB written\n", written/(1024*1024))
+			if time.Since(lastReport) >= 200*time.Millisecond {
+				ui().Progress("Decompressing", written, 0)
 				lastReport = time.Now()
 			}
 		}

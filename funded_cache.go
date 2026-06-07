@@ -242,6 +242,6 @@ func readHash32Slice(r io.Reader, count int) ([][32]byte, error) {
 
 func removeFundedCache() {
 	if err := os.Remove(fundedCacheFile); err != nil && !os.IsNotExist(err) {
-		fmt.Printf("Warning: could not remove %s: %v\n", fundedCacheFile, err)
+		ui().Warnf("could not remove %s: %v\n", fundedCacheFile, err)
 	}
 }
