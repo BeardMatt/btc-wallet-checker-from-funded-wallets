@@ -17,6 +17,8 @@ import (
 	"golang.org/x/text/message"
 )
 
+const keyBatchSize = 128
+
 func main() {
 	if len(os.Args) < 2 {
 		fmt.Printf("%s <number of wallets to try> [threads]\n", os.Args[0])
@@ -51,16 +53,23 @@ func main() {
 	start := time.Now()
 	ch := newWallet(workers)
 
-	for range numtests {
-		wallet := <-ch
-		if kind, ok := matchFunded(fundedSets, wallet.Keys); ok {
-			privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
-			wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
-			if err != nil {
-				panic(err)
+	processed := 0
+	for processed < numtests {
+		batch := <-ch
+		for _, wallet := range batch {
+			if processed >= numtests {
+				break
 			}
-			addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
-			fmt.Println(wif.String(), " : ", addr)
+			if kind, ok := matchFunded(fundedSets, wallet.Keys); ok {
+				privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
+				wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
+				if err != nil {
+					panic(err)
+				}
+				addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
+				fmt.Println(wif.String(), " : ", addr)
+			}
+			processed++
 		}
 	}
 
@@ -69,12 +78,17 @@ func main() {
 	fmt.Printf("Took %fs... Average %.2f keys per second\n", took.Seconds(), avg)
 }
 
-func newWallet(n int) chan bitcoin.Wallet {
-	ch := make(chan bitcoin.Wallet, n)
+func newWallet(n int) chan []bitcoin.Wallet {
+	ch := make(chan []bitcoin.Wallet, n)
 	for range n {
 		go func() {
+			batch := make([]bitcoin.Wallet, 0, keyBatchSize)
 			for {
-				ch <- bitcoin.GenKeypair()
+				batch = append(batch, bitcoin.GenKeypair())
+				if len(batch) >= keyBatchSize {
+					ch <- batch
+					batch = make([]bitcoin.Wallet, 0, keyBatchSize)
+				}
 			}
 		}()
 	}

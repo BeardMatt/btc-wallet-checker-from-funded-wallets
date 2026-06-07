@@ -77,7 +77,7 @@
       "path": "medium/03-batch-keys-per-goroutine",
       "title": "Batch keys per goroutine",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "5-15% from reduced channel overhead"
     },

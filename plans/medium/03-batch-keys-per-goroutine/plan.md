@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `medium-03` |
 | **Priority** | Medium |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | 5–15% from reduced channel overhead |
 
@@ -85,9 +85,9 @@ Benchmark with 32, 64, 128, 256:
 
 ## Verification
 
-- [ ] Throughput ≥ unbatched version
-- [ ] Exact key count still honored (`numtests` not exceeded)
-- [ ] No goroutine leak at exit
+- [x] Throughput ≥ unbatched version (+11.4% vs medium-02)
+- [x] Exact key count still honored (`numtests` not exceeded)
+- [x] No goroutine leak at exit (workers exit with process)
 
 ## Rollback
 

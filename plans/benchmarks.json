@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "medium-03",
+      "title": "Batch keys per goroutine",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 54627.71,
+      "hot_loop_seconds": 0.915,
+      "wall_seconds": 1.786,
+      "startup_seconds": 0.871,
+      "delta_vs_previous": "+11.4%",
+      "notes": "Workers send batches of 128 wallets over channel; consumer iterates locally. Hot loop +11.4% vs medium-02 from reduced channel sync overhead."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "93ebe58",
       "plan_id": "medium-02",
       "title": "Bloom filter pre-check",
