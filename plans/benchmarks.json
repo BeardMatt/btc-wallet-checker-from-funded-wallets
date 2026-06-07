@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": null,
+      "commit": "027247c",
       "plan_id": "medium-04",
       "title": "Faster TSV parsing at startup",
       "command": "./btcfind 50000 8",
