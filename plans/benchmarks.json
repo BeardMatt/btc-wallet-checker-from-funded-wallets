@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "pending",
+      "commit": "93ebe58",
       "plan_id": "medium-02",
       "title": "Bloom filter pre-check",
       "command": "./btcfind 50000 8",
