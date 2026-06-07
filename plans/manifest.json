@@ -68,7 +68,7 @@
       "path": "medium/02-bloom-filter",
       "title": "Bloom filter pre-check",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["medium-01", "high-01"],
       "estimated_gain": "1.5-3x lookup throughput"
     },

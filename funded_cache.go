@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/bits-and-blooms/bloom/v3"
 )
 
 const fundedCacheFile = "funded.cache"
@@ -14,8 +16,9 @@ const fundedCacheFile = "funded.cache"
 var fundedCacheMagic = [4]byte{'B', 'F', 'N', 'D'}
 
 const (
-	fundedCacheVersion uint32 = 1
-	fundedCacheHeaderSize       = 4 + 4 + 8 + 4*4 // magic + version + mtime + 4 counts
+	fundedCacheVersionV1   uint32 = 1
+	fundedCacheVersionV2   uint32 = 2
+	fundedCacheHeaderSize         = 4 + 4 + 8 + 4*4 // magic + version + mtime + 4 counts
 )
 
 func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
@@ -28,7 +31,7 @@ func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
 	writeErr := func() error {
 		header := make([]byte, fundedCacheHeaderSize)
 		copy(header[0:4], fundedCacheMagic[:])
-		binary.LittleEndian.PutUint32(header[4:8], fundedCacheVersion)
+		binary.LittleEndian.PutUint32(header[4:8], fundedCacheVersionV2)
 		binary.LittleEndian.PutUint64(header[8:16], uint64(srcMtime.UnixNano()))
 		binary.LittleEndian.PutUint32(header[16:20], uint32(len(sets.Legacy)))
 		binary.LittleEndian.PutUint32(header[20:24], uint32(len(sets.P2SH)))
@@ -47,7 +50,19 @@ func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
 		if err := writeHash20Slice(f, sets.SegwitV0); err != nil {
 			return err
 		}
-		return writeHash32Slice(f, sets.TaprootV1)
+		if err := writeHash32Slice(f, sets.TaprootV1); err != nil {
+			return err
+		}
+		if err := writeBloom(f, sets.LegacyBloom); err != nil {
+			return err
+		}
+		if err := writeBloom(f, sets.P2SHBloom); err != nil {
+			return err
+		}
+		if err := writeBloom(f, sets.SegwitV0Bloom); err != nil {
+			return err
+		}
+		return writeBloom(f, sets.TaprootV1Bloom)
 	}()
 
 	closeErr := f.Close()
@@ -101,7 +116,8 @@ func readFundedCache(path string, expectedMtime time.Time) (FundedSets, error) {
 	if [4]byte(header[0:4]) != fundedCacheMagic {
 		return FundedSets{}, errors.New("invalid cache magic")
 	}
-	if binary.LittleEndian.Uint32(header[4:8]) != fundedCacheVersion {
+	version := binary.LittleEndian.Uint32(header[4:8])
+	if version != fundedCacheVersionV1 && version != fundedCacheVersionV2 {
 		return FundedSets{}, errors.New("unsupported cache version")
 	}
 	cacheMtime := time.Unix(0, int64(binary.LittleEndian.Uint64(header[8:16])))
@@ -131,12 +147,67 @@ func readFundedCache(path string, expectedMtime time.Time) (FundedSets, error) {
 		return FundedSets{}, err
 	}
 
-	return FundedSets{
+	sets := FundedSets{
 		Legacy:    legacy,
 		P2SH:      p2sh,
 		SegwitV0:  segwit,
 		TaprootV1: taproot,
-	}, nil
+	}
+
+	if version == fundedCacheVersionV2 {
+		sets.LegacyBloom, err = readBloom(f)
+		if err != nil {
+			return FundedSets{}, err
+		}
+		sets.P2SHBloom, err = readBloom(f)
+		if err != nil {
+			return FundedSets{}, err
+		}
+		sets.SegwitV0Bloom, err = readBloom(f)
+		if err != nil {
+			return FundedSets{}, err
+		}
+		sets.TaprootV1Bloom, err = readBloom(f)
+		if err != nil {
+			return FundedSets{}, err
+		}
+	}
+
+	return sets, nil
+}
+
+func writeBloom(w io.Writer, bf *bloom.BloomFilter) error {
+	if bf == nil {
+		return binary.Write(w, binary.LittleEndian, uint32(0))
+	}
+	data, err := bf.MarshalBinary()
+	if err != nil {
+		return err
+	}
+	if err := binary.Write(w, binary.LittleEndian, uint32(len(data))); err != nil {
+		return err
+	}
+	_, err = w.Write(data)
+	return err
+}
+
+func readBloom(r io.Reader) (*bloom.BloomFilter, error) {
+	var n uint32
+	if err := binary.Read(r, binary.LittleEndian, &n); err != nil {
+		return nil, fmt.Errorf("read bloom length: %w", err)
+	}
+	if n == 0 {
+		return nil, nil
+	}
+	data := make([]byte, n)
+	if _, err := io.ReadFull(r, data); err != nil {
+		return nil, fmt.Errorf("read bloom data: %w", err)
+	}
+	bf := &bloom.BloomFilter{}
+	if err := bf.UnmarshalBinary(data); err != nil {
+		return nil, fmt.Errorf("decode bloom: %w", err)
+	}
+	return bf, nil
 }
 
 func readHash20Slice(r io.Reader, count int) ([][20]byte, error) {

@@ -2,10 +2,17 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"sort"
+	"sync"
+	"time"
 
 	"btcfind/bitcoin"
+
+	"github.com/bits-and-blooms/bloom/v3"
 )
+
+const bloomFalsePositiveRate = 0.0001
 
 type FundedSets struct {
 	Legacy    [][20]byte
@@ -13,6 +20,11 @@ type FundedSets struct {
 	SegwitV0  [][20]byte
 	TaprootV1 [][32]byte
 	Other     []string // non-standard entries that fail address decode
+
+	LegacyBloom    *bloom.BloomFilter
+	P2SHBloom      *bloom.BloomFilter
+	SegwitV0Bloom  *bloom.BloomFilter
+	TaprootV1Bloom *bloom.BloomFilter
 }
 
 func (s FundedSets) Total() int {
@@ -53,6 +65,105 @@ func (s *FundedSets) Sort() {
 	sort.Strings(s.Other)
 }
 
+func (s FundedSets) bloomsComplete() bool {
+	return bloomReady(s.LegacyBloom, len(s.Legacy)) &&
+		bloomReady(s.P2SHBloom, len(s.P2SH)) &&
+		bloomReady(s.SegwitV0Bloom, len(s.SegwitV0)) &&
+		bloomReady(s.TaprootV1Bloom, len(s.TaprootV1))
+}
+
+func bloomReady(bf *bloom.BloomFilter, entries int) bool {
+	return entries == 0 || bf != nil
+}
+
+func (s *FundedSets) ensureBlooms() {
+	if s.bloomsComplete() {
+		return
+	}
+	s.BuildBlooms()
+}
+
+func (s *FundedSets) BuildBlooms() {
+	start := time.Now()
+	var wg sync.WaitGroup
+	wg.Add(4)
+	go func() {
+		s.LegacyBloom = buildBloom20(s.Legacy)
+		wg.Done()
+	}()
+	go func() {
+		s.P2SHBloom = buildBloom20(s.P2SH)
+		wg.Done()
+	}()
+	go func() {
+		s.SegwitV0Bloom = buildBloom20(s.SegwitV0)
+		wg.Done()
+	}()
+	go func() {
+		s.TaprootV1Bloom = buildBloom32(s.TaprootV1)
+		wg.Done()
+	}()
+	wg.Wait()
+
+	fmt.Println("Bloom filters:")
+	logBloomBucket("legacy", s.LegacyBloom, len(s.Legacy))
+	logBloomBucket("p2sh", s.P2SHBloom, len(s.P2SH))
+	logBloomBucket("segwit", s.SegwitV0Bloom, len(s.SegwitV0))
+	logBloomBucket("taproot", s.TaprootV1Bloom, len(s.TaprootV1))
+	fmt.Printf("Built bloom filters in %.2fs\n", time.Since(start).Seconds())
+}
+
+func buildBloom20(set [][20]byte) *bloom.BloomFilter {
+	if len(set) == 0 {
+		return nil
+	}
+	bf := bloom.NewWithEstimates(uint(len(set)), bloomFalsePositiveRate)
+	for _, entry := range set {
+		bf.Add(entry[:])
+	}
+	return bf
+}
+
+func buildBloom32(set [][32]byte) *bloom.BloomFilter {
+	if len(set) == 0 {
+		return nil
+	}
+	bf := bloom.NewWithEstimates(uint(len(set)), bloomFalsePositiveRate)
+	for _, entry := range set {
+		bf.Add(entry[:])
+	}
+	return bf
+}
+
+func logBloomBucket(name string, bf *bloom.BloomFilter, entries int) {
+	if bf == nil {
+		return
+	}
+	fp := bloom.EstimateFalsePositiveRate(bf.Cap(), bf.K(), uint(entries))
+	fmt.Printf(
+		"  %s: %d entries, %d bits, %d hashes, est FP %.6f\n",
+		name,
+		entries,
+		bf.Cap(),
+		bf.K(),
+		fp,
+	)
+}
+
+func maybeFunded20(bf *bloom.BloomFilter, set [][20]byte, key [20]byte) bool {
+	if bf != nil && !bf.Test(key[:]) {
+		return false
+	}
+	return inFunded20(set, key)
+}
+
+func maybeFunded32(bf *bloom.BloomFilter, set [][32]byte, key [32]byte) bool {
+	if bf != nil && !bf.Test(key[:]) {
+		return false
+	}
+	return inFunded32(set, key)
+}
+
 func inFunded20(set [][20]byte, key [20]byte) bool {
 	idx := sort.Search(len(set), func(i int) bool {
 		return bytes.Compare(set[i][:], key[:]) >= 0
@@ -68,19 +179,19 @@ func inFunded32(set [][32]byte, key [32]byte) bool {
 }
 
 func matchFunded(sets FundedSets, keys bitcoin.LookupKeys) (bitcoin.MatchKind, bool) {
-	if inFunded20(sets.Legacy, keys.CompressedHash) {
+	if maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.CompressedHash) {
 		return bitcoin.MatchLegacyCompressed, true
 	}
-	if inFunded20(sets.Legacy, keys.UncompressedHash) {
+	if maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.UncompressedHash) {
 		return bitcoin.MatchLegacyUncompressed, true
 	}
-	if inFunded20(sets.SegwitV0, keys.CompressedHash) {
+	if maybeFunded20(sets.SegwitV0Bloom, sets.SegwitV0, keys.CompressedHash) {
 		return bitcoin.MatchSegwitV0, true
 	}
-	if inFunded20(sets.P2SH, keys.P2SHHash) {
+	if maybeFunded20(sets.P2SHBloom, sets.P2SH, keys.P2SHHash) {
 		return bitcoin.MatchP2SH, true
 	}
-	if inFunded32(sets.TaprootV1, keys.TaprootKey) {
+	if maybeFunded32(sets.TaprootV1Bloom, sets.TaprootV1, keys.TaprootKey) {
 		return bitcoin.MatchTaproot, true
 	}
 	return 0, false

@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "medium-02",
+      "title": "Bloom filter pre-check",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 49047.0,
+      "hot_loop_seconds": 1.019,
+      "wall_seconds": 1.885,
+      "startup_seconds": 0.866,
+      "delta_vs_previous": "+5.0%",
+      "notes": "Per-bucket bloom filters (0.01% FP) with two-stage lookup. Cache extended to v2 to persist blooms (677MB); v1 auto-upgrades on first run. Cache hit 0.73s. Hot loop +5% vs high-02."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "c51edfa",
       "plan_id": "high-02",
       "title": "Preprocess funded.tsv into cache file",

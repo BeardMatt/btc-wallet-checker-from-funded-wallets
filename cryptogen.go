@@ -92,6 +92,14 @@ func loadFunded() FundedSets {
 	srcMtime := tsvInfo.ModTime()
 
 	if sets, err := readFundedCache(fundedCacheFile, srcMtime); err == nil {
+		if !sets.bloomsComplete() {
+			sets.ensureBlooms()
+			if err := writeFundedCache(fundedCacheFile, sets, srcMtime); err != nil {
+				fmt.Printf("Warning: could not upgrade cache: %v\n", err)
+			} else {
+				fmt.Println("Upgraded funded.cache to v2 (with bloom filters)")
+			}
+		}
 		logFundedLoad(sets, loadStart, true)
 		return sets
 	}
@@ -101,6 +109,8 @@ func loadFunded() FundedSets {
 	sortStart := time.Now()
 	sets.Sort()
 	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
+
+	sets.ensureBlooms()
 
 	if err := writeFundedCache(fundedCacheFile, sets, srcMtime); err != nil {
 		fmt.Printf("Warning: could not write cache: %v\n", err)

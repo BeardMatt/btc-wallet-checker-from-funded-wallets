@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `medium-02` |
 | **Priority** | Medium |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `medium-01`, `high-01` |
 | **Estimated gain** | 1.5–3× lookup throughput |
 
@@ -93,9 +93,9 @@ Log bloom stats at startup: estimated FP rate, bit count, hash count.
 ./btcfind 500000 8
 ```
 
-- [ ] Throughput improves vs `high-01` alone
-- [ ] No false negatives (bloom miss = definitely not in set)
-- [ ] Confirm with unit test: all funded entries return `bf.Test() == true`
+- [x] Throughput improves vs `high-01` alone (+5% hot loop vs high-02 with cache)
+- [x] No false negatives (bloom miss = definitely not in set)
+- [x] Unit test confirms all entries in test sets return `bf.Test() == true`
 
 ## Rollback
 
