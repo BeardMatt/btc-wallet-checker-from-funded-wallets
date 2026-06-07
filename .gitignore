@@ -30,6 +30,7 @@ mem.prof
 .env.*
 *.pem
 *.key
+/wallets.txt
 
 # --- IDE / editor ---
 .idea/

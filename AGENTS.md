@@ -136,6 +136,8 @@ On a TTY, the search phase shows a live `Testing N keys…` progress line on std
 
 When a wallet is found (or `--simulate-hit`), a framed banner on stderr shows the address, WIF, format, and step-by-step recovery instructions (Electrum, Sparrow, Bitcoin Core).
 
+Real funded matches are also appended to `wallets.txt` in the working directory (append-only, mode `0600`). `--simulate-hit` does not write this file. **Never commit `wallets.txt`** — it contains private keys.
+
 Examples:
 
 ```bash

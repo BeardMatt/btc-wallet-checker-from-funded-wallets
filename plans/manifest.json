@@ -161,7 +161,7 @@
       "path": "low/08-wallets-txt",
       "title": "Persist discovered wallets to wallets.txt",
       "priority": "low",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["low-07"],
       "estimated_gain": "Reliability — append-only hit log survives crashes"
     }

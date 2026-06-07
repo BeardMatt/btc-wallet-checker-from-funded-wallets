@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-08",
+      "title": "Persist discovered wallets to wallets.txt",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 56335.83,
+      "hot_loop_seconds": 0.887535,
+      "wall_seconds": 1.726,
+      "startup_seconds": 0.838,
+      "delta_vs_previous": "+0.3%",
+      "notes": "Append-only wallets.txt on real hits only; simulate-hit excluded. Hot-loop unchanged."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "c751d4f",
       "plan_id": "low-07",
       "title": "Output UX — pretty terminal, progress, wallet recovery",

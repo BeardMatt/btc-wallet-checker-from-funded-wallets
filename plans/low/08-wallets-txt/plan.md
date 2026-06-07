@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-08` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `low-07` |
 | **Estimated gain** | Reliability — survives crashes; no hot-loop throughput change |
 
@@ -141,12 +141,12 @@ cat wallets.txt
 ./scripts/run-benchmark.sh           # no file created; throughput unchanged
 ```
 
-- [ ] Real hit appends to `wallets.txt` with full WIF and address
-- [ ] Second hit in same run appends second block
-- [ ] `--simulate-hit` does not write the file
-- [ ] Write failure warns but does not stop the run
-- [ ] `wallets.txt` is gitignored
-- [ ] Standard benchmark unchanged
+- [x] Real hit appends to `wallets.txt` with full WIF and address
+- [x] Second hit in same run appends second block
+- [x] `--simulate-hit` does not write the file
+- [x] Write failure warns but does not stop the run
+- [x] `wallets.txt` is gitignored
+- [x] Standard benchmark unchanged
 
 ## Rollback
 

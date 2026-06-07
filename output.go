@@ -303,6 +303,15 @@ func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex in
 	wif := formatWIF(wallet.PrivKey)
 	id, label := kindLabels(kind)
 
+	savedToLog := false
+	if !simulated {
+		if err := appendWalletHit(keyIndex, kind, addr, wif); err != nil {
+			u.Warnf("could not write %s: %v\n", walletsLogFile, err)
+		} else {
+			savedToLog = true
+		}
+	}
+
 	title := "WALLET FOUND"
 	if simulated {
 		if u.color {
@@ -330,6 +339,9 @@ func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex in
 	u.PrintlnErr(border("WIF       "+wif))
 	u.PrintlnErr(border("Key #     "+u.formatIntN(keyIndex)))
 	u.PrintlnErr("╚══════════════════════════════════════════════════════════════╝")
+	if savedToLog {
+		u.PrintfErr("  Saved to %s\n", walletsLogFile)
+	}
 	u.PrintlnErr("")
 	u.PrintlnErr("Recover funds (do this on an offline or trusted machine):")
 	u.PrintlnErr("")
