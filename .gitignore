@@ -1,0 +1,44 @@
+# --- Build outputs ---
+/btcfind
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+
+# --- Runtime / downloaded data ---
+/funded.tsv
+/funded.tsv.tmp
+/funded.cache
+/funded.cache.bin
+*.tsv.gz
+
+# --- Go tooling ---
+/vendor/
+go.work
+go.work.sum
+*.out
+*.prof
+cpu.prof
+mem.prof
+
+# --- Environment / secrets ---
+.env
+.env.*
+*.pem
+*.key
+
+# --- IDE / editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+.directory

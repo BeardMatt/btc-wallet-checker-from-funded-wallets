@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "project": "btcfind",
+  "baseline_command": "./btcfind 50000 8",
+  "recommended_order": [
+    "high-04",
+    "high-03",
+    "medium-01",
+    "high-01",
+    "medium-04",
+    "high-02",
+    "medium-02",
+    "medium-03",
+    "low-01",
+    "low-02",
+    "low-03"
+  ],
+  "plans": [
+    {
+      "id": "high-01",
+      "path": "high/01-hash-based-lookup",
+      "title": "Hash-based lookup (no string encode)",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["medium-01"],
+      "estimated_gain": "2-5x hot-loop throughput"
+    },
+    {
+      "id": "high-02",
+      "path": "high/02-funded-cache",
+      "title": "Preprocess funded.tsv into cache file",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["medium-01"],
+      "estimated_gain": "~27s startup to ~1s on cache hit"
+    },
+    {
+      "id": "high-03",
+      "path": "high/03-defer-wif-encoding",
+      "title": "Defer WIF encoding until hit",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "10-20% hot-loop throughput"
+    },
+    {
+      "id": "high-04",
+      "path": "high/04-fix-worker-count",
+      "title": "Fix worker count (use all threads)",
+      "priority": "high",
+      "status": "completed",
+      "depends_on": [],
+      "estimated_gain": "10-30% on multi-core machines"
+    },
+    {
+      "id": "medium-01",
+      "path": "medium/01-partition-funded-set",
+      "title": "Partition funded set by address type",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "Foundation for hash lookups and bloom filter"
+    },
+    {
+      "id": "medium-02",
+      "path": "medium/02-bloom-filter",
+      "title": "Bloom filter pre-check",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": ["medium-01", "high-01"],
+      "estimated_gain": "1.5-3x lookup throughput"
+    },
+    {
+      "id": "medium-03",
+      "path": "medium/03-batch-keys-per-goroutine",
+      "title": "Batch keys per goroutine",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "5-15% from reduced channel overhead"
+    },
+    {
+      "id": "medium-04",
+      "path": "medium/04-faster-tsv-parsing",
+      "title": "Faster TSV parsing at startup",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "2-4x faster cold startup parse"
+    },
+    {
+      "id": "low-01",
+      "path": "low/01-hand-rolled-encoding",
+      "title": "Hand-rolled address encoding",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["high-01"],
+      "estimated_gain": "Marginal after hash-based lookup"
+    },
+    {
+      "id": "low-02",
+      "path": "low/02-gpu-secp256k1",
+      "title": "GPU / assembly secp256k1",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["high-01", "medium-02"],
+      "estimated_gain": "Uncertain; keygen is not current bottleneck"
+    },
+    {
+      "id": "low-03",
+      "path": "low/03-distributed-search",
+      "title": "Distributed search across machines",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["high-01", "high-02"],
+      "estimated_gain": "Linear scale-out; not single-machine optimization"
+    }
+  ]
+}
