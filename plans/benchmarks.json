@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "pending",
+      "commit": "940903d",
       "plan_id": "low-01",
       "title": "Hand-rolled address encoding",
       "command": "./btcfind 50000 8",
