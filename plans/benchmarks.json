@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "high-02",
+      "title": "Preprocess funded.tsv into cache file",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 46734.66,
+      "hot_loop_seconds": 1.070,
+      "wall_seconds": 1.852,
+      "startup_seconds": 0.782,
+      "delta_vs_previous": "+2.3%",
+      "notes": "Binary funded.cache (606MB) keyed on funded.tsv mtime. Cache hit: load 0.64s vs ~56s TSV parse+sort. Four bucket counts match; Other (593K) not cached. Hot loop unchanged."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "af46bbb",
       "plan_id": "high-01",
       "title": "Hash-based lookup (no string encode)",

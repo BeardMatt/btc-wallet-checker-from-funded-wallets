@@ -129,6 +129,8 @@ func downloadFunded() error {
 		_ = os.Chtimes(fundedFile, remoteMod, remoteMod)
 	}
 
+	removeFundedCache()
+
 	fmt.Printf("Saved %s (%d bytes)\n", fundedFile, written)
 	return nil
 }

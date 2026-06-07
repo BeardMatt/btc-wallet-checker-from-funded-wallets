@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `high-02` |
 | **Priority** | High |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `medium-01` |
 | **Estimated gain** | ~27s cold startup → ~1s on cache hit |
 
@@ -90,9 +90,9 @@ time ./btcfind 1000 4
 time ./btcfind 1000 4
 ```
 
-- [ ] Second run startup < 3 seconds
-- [ ] Cache invalidated after `funded.tsv` download
-- [ ] Loaded counts match uncached parse (log all four set sizes)
+- [x] Second run startup < 3 seconds (0.65s cache load)
+- [x] Cache invalidated after `funded.tsv` download
+- [x] Loaded counts match uncached parse (four byte buckets; Other not cached)
 
 ## Rollback
 

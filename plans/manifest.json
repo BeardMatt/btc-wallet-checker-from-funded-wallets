@@ -32,7 +32,7 @@
       "path": "high/02-funded-cache",
       "title": "Preprocess funded.tsv into cache file",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["medium-01"],
       "estimated_gain": "~27s startup to ~1s on cache hit"
     },

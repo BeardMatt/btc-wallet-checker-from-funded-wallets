@@ -85,6 +85,34 @@ func loadFunded() FundedSets {
 	fmt.Println("Loading funded wallets...")
 	loadStart := time.Now()
 
+	tsvInfo, err := os.Stat("funded.tsv")
+	if err != nil {
+		panic("couldn't stat funded.tsv")
+	}
+	srcMtime := tsvInfo.ModTime()
+
+	if sets, err := readFundedCache(fundedCacheFile, srcMtime); err == nil {
+		logFundedLoad(sets, loadStart, true)
+		return sets
+	}
+
+	sets := parseFundedTSV()
+	fmt.Println("Sorting funded wallets...")
+	sortStart := time.Now()
+	sets.Sort()
+	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
+
+	if err := writeFundedCache(fundedCacheFile, sets, srcMtime); err != nil {
+		fmt.Printf("Warning: could not write cache: %v\n", err)
+	} else {
+		fmt.Println("Wrote funded.cache")
+	}
+
+	logFundedLoad(sets, loadStart, false)
+	return sets
+}
+
+func parseFundedTSV() FundedSets {
 	file, err := os.Open("funded.tsv")
 	if err != nil {
 		panic("couldn't open funded.tsv")
@@ -118,10 +146,19 @@ func loadFunded() FundedSets {
 		panic(err)
 	}
 
+	return sets
+}
+
+func logFundedLoad(sets FundedSets, loadStart time.Time, fromCache bool) {
 	printer := message.NewPrinter(language.English)
+	source := "parsed"
+	if fromCache {
+		source = "cache"
+	}
 	printer.Printf(
-		"Loaded %d wallets in %.2fs (legacy=%d p2sh=%d segwit=%d taproot=%d other=%d)\n",
+		"Loaded %d wallets from %s in %.2fs (legacy=%d p2sh=%d segwit=%d taproot=%d other=%d)\n",
 		sets.Total(),
+		source,
 		time.Since(loadStart).Seconds(),
 		len(sets.Legacy),
 		len(sets.P2SH),
@@ -129,11 +166,4 @@ func loadFunded() FundedSets {
 		len(sets.TaprootV1),
 		len(sets.Other),
 	)
-
-	fmt.Println("Sorting funded wallets...")
-	sortStart := time.Now()
-	sets.Sort()
-	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
-
-	return sets
 }
