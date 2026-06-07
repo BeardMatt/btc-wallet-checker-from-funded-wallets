@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `high-01` |
 | **Priority** | High |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `medium-01` |
 | **Estimated gain** | 2–5× hot-loop throughput |
 
@@ -93,9 +93,9 @@ go build -o btcfind .
 ./btcfind 50000 8
 ```
 
-- [ ] Throughput increases vs baseline
-- [ ] No regressions in address format coverage (still checks 1/3/bc1q/bc1p)
-- [ ] Hit output still prints valid WIF and address
+- [x] Throughput increases vs baseline (+15.7% hot loop vs medium-01)
+- [x] No regressions in address format coverage (still checks 1/3/bc1q/bc1p)
+- [x] Hit output still prints valid WIF and address (encode on hit only)
 
 ## Rollback
 

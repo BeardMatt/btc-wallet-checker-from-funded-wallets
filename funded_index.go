@@ -67,37 +67,23 @@ func inFunded32(set [][32]byte, key [32]byte) bool {
 	return idx < len(set) && set[idx] == key
 }
 
-func inFundedOther(set []string, address string) bool {
-	idx := sort.SearchStrings(set, address)
-	return idx < len(set) && set[idx] == address
-}
-
-func inFunded(sets FundedSets, address string) bool {
-	kind, hash, err := bitcoin.DecodeFundedAddress(address)
-	if err != nil {
-		return inFundedOther(sets.Other, address)
+func matchFunded(sets FundedSets, keys bitcoin.LookupKeys) (bitcoin.MatchKind, bool) {
+	if inFunded20(sets.Legacy, keys.CompressedHash) {
+		return bitcoin.MatchLegacyCompressed, true
 	}
-
-	switch kind {
-	case bitcoin.KindLegacy:
-		var key [20]byte
-		copy(key[:], hash)
-		return inFunded20(sets.Legacy, key)
-	case bitcoin.KindP2SH:
-		var key [20]byte
-		copy(key[:], hash)
-		return inFunded20(sets.P2SH, key)
-	case bitcoin.KindSegwitV0:
-		var key [20]byte
-		copy(key[:], hash)
-		return inFunded20(sets.SegwitV0, key)
-	case bitcoin.KindTaprootV1:
-		var key [32]byte
-		copy(key[:], hash)
-		return inFunded32(sets.TaprootV1, key)
-	default:
-		return false
+	if inFunded20(sets.Legacy, keys.UncompressedHash) {
+		return bitcoin.MatchLegacyUncompressed, true
 	}
+	if inFunded20(sets.SegwitV0, keys.CompressedHash) {
+		return bitcoin.MatchSegwitV0, true
+	}
+	if inFunded20(sets.P2SH, keys.P2SHHash) {
+		return bitcoin.MatchP2SH, true
+	}
+	if inFunded32(sets.TaprootV1, keys.TaprootKey) {
+		return bitcoin.MatchTaproot, true
+	}
+	return 0, false
 }
 
 func (s *FundedSets) addAddress(addr string) {

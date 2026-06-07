@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "high-01",
+      "title": "Hash-based lookup (no string encode)",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 45686.38,
+      "hot_loop_seconds": 1.094,
+      "wall_seconds": 57.032,
+      "startup_seconds": 55.938,
+      "delta_vs_previous": "+15.7%",
+      "notes": "LookupKeys with hash160/taproot derivation; byte-slice search via matchFunded; address encoding only on hit. Hot loop +15.7% vs medium-01. secp256k1 keygen still dominates — below plan's 2-5x estimate."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "a21283c",
       "plan_id": "medium-01",
       "title": "Partition funded set by address type",

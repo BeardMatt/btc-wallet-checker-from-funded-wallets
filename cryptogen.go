@@ -53,16 +53,14 @@ func main() {
 
 	for range numtests {
 		wallet := <-ch
-		for _, addr := range wallet.Addresses {
-			if inFunded(fundedSets, addr) {
-				privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
-				wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
-				if err != nil {
-					panic(err)
-				}
-				fmt.Println(wif.String(), " : ", addr)
-				break
+		if kind, ok := matchFunded(fundedSets, wallet.Keys); ok {
+			privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
+			wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
+			if err != nil {
+				panic(err)
 			}
+			addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
+			fmt.Println(wif.String(), " : ", addr)
 		}
 	}
 

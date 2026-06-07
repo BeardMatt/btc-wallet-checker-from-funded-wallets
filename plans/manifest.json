@@ -14,7 +14,8 @@
     "low-01",
     "low-02",
     "low-03",
-    "low-04"
+    "low-04",
+    "low-05"
   ],
   "plans": [
     {
@@ -22,7 +23,7 @@
       "path": "high/01-hash-based-lookup",
       "title": "Hash-based lookup (no string encode)",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["medium-01"],
       "estimated_gain": "2-5x hot-loop throughput"
     },
@@ -124,6 +125,15 @@
       "status": "completed",
       "depends_on": ["high-04"],
       "estimated_gain": "Convenience — default to runtime.NumCPU()"
+    },
+    {
+      "id": "low-05",
+      "path": "low/05-configurable-min-balance",
+      "title": "Configurable minimum funded balance",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "Transparency — expose 30k-sat filter; optional full funded set"
     }
   ]
 }
