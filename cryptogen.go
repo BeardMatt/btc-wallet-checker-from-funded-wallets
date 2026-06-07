@@ -5,14 +5,10 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strconv"
 	"time"
 
 	"btcfind/bitcoin"
 
-	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcutil"
-	"github.com/btcsuite/btcd/chaincfg"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -20,61 +16,73 @@ import (
 const keyBatchSize = 128
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Printf("%s <number of wallets to try> [threads]\n", os.Args[0])
+	cfg, err := parseCLI(os.Args[1:])
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		printUsage()
 		return
 	}
 
-	numtests, err := strconv.Atoi(os.Args[1])
-	if err != nil {
-		panic("couldn't get number of wallets")
-	}
-
-	threads := 0
-	if len(os.Args) >= 3 {
-		threads, err = strconv.Atoi(os.Args[2])
-		if err != nil {
-			panic("couldn't get threads")
-		}
-	}
-
-	workers := threads
+	workers := cfg.threads
 	if workers < 1 {
 		workers = runtime.NumCPU()
 	}
 	fmt.Printf("Using %d workers\n", workers)
+	if cfg.simulateHit {
+		fmt.Printf("Simulate hit enabled at key %d\n", cfg.simulateHitAt)
+	}
+	if cfg.injectIndexHit != "" {
+		fmt.Printf("Inject index hit enabled for bucket %q at key %d\n", cfg.injectIndexHit, cfg.simulateHitAt)
+	}
 
 	ensureFunded()
 	fundedSets := loadFunded()
 
 	printer := message.NewPrinter(language.English)
-	printer.Printf("Testing %d keys... ", numtests)
+	printer.Printf("Testing %d keys... ", cfg.numKeys)
 
 	start := time.Now()
 	ch := newWallet(workers)
 
 	processed := 0
-	for processed < numtests {
+	for processed < cfg.numKeys {
 		batch := <-ch
 		for _, wallet := range batch {
-			if processed >= numtests {
+			if processed >= cfg.numKeys {
 				break
 			}
-			if kind, ok := matchFunded(fundedSets, wallet.Keys); ok {
-				privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
-				wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
+
+			keyIndex := processed + 1
+			keys := wallet.Keys
+			if cfg.injectIndexHit != "" && keyIndex == cfg.simulateHitAt {
+				fundedAddr, err := applyInjectIndexHit(fundedSets, &keys, cfg.injectIndexHit)
 				if err != nil {
 					panic(err)
 				}
-				addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
-				fmt.Println(wif.String(), " : ", addr)
+				fmt.Printf("inject-index-hit: bucket=%s funded_address=%s\n", cfg.injectIndexHit, fundedAddr)
 			}
+
+			kind, ok := matchFunded(fundedSets, keys)
+			if ok {
+				wallet.Keys = keys
+				printHit(wallet, kind, false)
+			}
+
+			if cfg.verifyLookup && keyIndex == cfg.simulateHitAt {
+				printLookupVerify(fundedSets, keys, kind, ok)
+			}
+
+			if cfg.simulateHit && keyIndex == cfg.simulateHitAt && !ok {
+				wallet.Keys = keys
+				printHit(wallet, simulateDisplayKind(keys, kind, ok), true)
+			}
+
 			processed++
 		}
 	}
 
 	took := time.Since(start)
-	avg := float64(numtests) / took.Seconds()
+	avg := float64(cfg.numKeys) / took.Seconds()
 	fmt.Printf("Took %fs... Average %.2f keys per second\n", took.Seconds(), avg)
 }
 

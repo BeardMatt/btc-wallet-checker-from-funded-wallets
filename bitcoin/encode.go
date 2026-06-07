@@ -40,6 +40,22 @@ func EncodeMatchAddress(kind MatchKind, keys LookupKeys) string {
 	}
 }
 
+func EncodePubKeyHash(hash [20]byte) string {
+	return encodePubKeyHash(hash)
+}
+
+func EncodeWitnessPubKeyHash(hash [20]byte) string {
+	return encodeWitnessPubKeyHash(hash)
+}
+
+func EncodeScriptHash(hash [20]byte) string {
+	return encodeScriptHash(hash)
+}
+
+func EncodeTaprootKey(key [32]byte) string {
+	return encodeTaproot(key)
+}
+
 func encodePubKeyHash(hash [20]byte) string {
 	return base58.CheckEncode(hash[:], mainnetPubKeyHashID)
 }

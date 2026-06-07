@@ -110,10 +110,28 @@ Sort by date descending. Flag entries where `command` differs from `standard_com
 
 ```bash
 go build -o btcfind .
-./btcfind <num_keys> [threads]
+./btcfind <num_keys> [threads] [flags]
 ```
 
 `threads` is optional — defaults to `runtime.NumCPU()`. Pass `0` or omit for auto; pass an explicit number to override (e.g. `./btcfind 50000 8` for benchmarks).
+
+### Test flags (optional)
+
+| Flag | Purpose |
+|------|---------|
+| `--simulate-hit` | Force hit output on key N (tests WIF/address path) |
+| `--simulate-hit-at N` | Key index for simulate/inject (default `1`) |
+| `--simulate-hit-verify-lookup` | Log per-bucket lookup results for key N |
+| `--inject-index-hit BUCKET` | Replace wallet hash with `index[0]` from bucket (`legacy`, `legacy-uncompressed`, `p2sh`, `segwit`, `taproot`) |
+
+Examples:
+
+```bash
+./btcfind 100 --simulate-hit
+./btcfind 1 --simulate-hit-verify-lookup --inject-index-hit legacy
+```
+
+Simulated hits do not require a real funded match. Inject mode tests lookup against a known index entry; WIF remains from the random key (not the funded address owner).
 
 `funded.tsv` is downloaded automatically on first run if missing (see `funded_download.go`).
 

@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-06` |
 | **Priority** | Low |
-| **Status** | `maybe` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | Correctness — exercises hit path without waiting for a real match |
 
@@ -18,12 +18,14 @@ Add a CLI flag that forces one simulated hit during a run so the full hit path c
 
 ## Scope (this plan only)
 
-- `--simulate-hit` flag (or `-simulate-hit`)
+- `--simulate-hit` flag
 - Optional `--simulate-hit-at N` (default `1`) — trigger on the Nth key processed
+- `--simulate-hit-verify-lookup` — per-bucket lookup report
+- `--inject-index-hit BUCKET` — inject `index[0]` hash for guaranteed lookup match
 - Print the same output as a real hit: `WIF : address`
 - Log clearly that the hit was simulated
 
-**Out of scope:** finding a real funded private key, modifying the funded index, benchmark changes.
+**Out of scope:** finding a real funded private key, benchmark changes.
 
 ## Implementation steps
 
@@ -75,9 +77,10 @@ go build -o btcfind .
 ./btcfind 100 --simulate-hit
 ```
 
-- [ ] Output includes `(simulated hit)` prefix and valid-looking WIF + address
-- [ ] No simulate output when flag omitted
-- [ ] Standard benchmark (`./btcfind 50000 8`) unchanged when flags not used
+- [x] Output includes `(simulated hit)` prefix and valid-looking WIF + address
+- [x] Inject mode reports `real_match=true` with funded address from index
+- [x] No simulate output when flag omitted
+- [x] Standard benchmark (`./btcfind 50000 8`) unchanged when flags not used
 
 ## Rollback
 

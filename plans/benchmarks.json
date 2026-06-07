@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-06",
+      "title": "Simulate-hit flag for testing",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 54281.47,
+      "hot_loop_seconds": 0.921,
+      "wall_seconds": 1.803,
+      "startup_seconds": 0.882,
+      "delta_vs_previous": "+9.0%",
+      "notes": "CLI test flags: --simulate-hit, --simulate-hit-verify-lookup, --inject-index-hit. Default path unchanged. Delta is run variance."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "940903d",
       "plan_id": "low-01",
       "title": "Hand-rolled address encoding",

@@ -141,7 +141,7 @@
       "path": "low/06-simulate-hit-flag",
       "title": "Simulate-hit flag for testing",
       "priority": "low",
-      "status": "maybe",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "Correctness — exercise WIF/address hit path on demand"
     }
