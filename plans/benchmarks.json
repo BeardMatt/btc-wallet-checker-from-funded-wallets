@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "9659117",
+      "commit": "a21283c",
       "plan_id": "medium-01",
       "title": "Partition funded set by address type",
       "command": "./btcfind 50000 8",
