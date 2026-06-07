@@ -113,7 +113,9 @@ For `--simulate-hit`, use the same layout with a visible `SIMULATED` badge (yell
 
 Include `matchKindName` → human label map (`segwit_v0` → `Native SegWit (bc1q)`).
 
-**Out of scope for v1:** writing WIF to a file, QR codes, automatic balance lookup from APIs.
+**Out of scope for v1:** QR codes, automatic balance lookup from APIs.
+
+**Follow-up:** persisting discoveries to `wallets.txt` — see `low-08`.
 
 ### Flags and AGENTS.md
 

@@ -20,7 +20,7 @@ plans/
 ├── manifest.json       # plan index (status, deps, order)
 ├── high/               # high-impact plans (4)
 ├── medium/             # medium-impact plans (4)
-└── low/                # low-priority plans (7)
+└── low/                # low-priority plans (8)
 ```
 
 Each plan lives at `<tier>/<slug>/plan.md`.
@@ -46,6 +46,7 @@ Work through plans in this order to respect dependencies:
 | 13 | `low-05` | Configurable minimum funded balance |
 | 14 | `low-06` | Simulate-hit flag for testing |
 | 15 | `low-07` | Output UX — pretty terminal, progress, wallet recovery |
+| 16 | `low-08` | Persist discovered wallets to wallets.txt |
 
 ## Status workflow
 

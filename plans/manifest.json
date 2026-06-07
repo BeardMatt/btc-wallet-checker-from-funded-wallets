@@ -17,7 +17,8 @@
     "low-04",
     "low-05",
     "low-06",
-    "low-07"
+    "low-07",
+    "low-08"
   ],
   "plans": [
     {
@@ -154,6 +155,15 @@
       "status": "completed",
       "depends_on": ["low-06"],
       "estimated_gain": "UX — structured output, live progress, hit recovery instructions"
+    },
+    {
+      "id": "low-08",
+      "path": "low/08-wallets-txt",
+      "title": "Persist discovered wallets to wallets.txt",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["low-07"],
+      "estimated_gain": "Reliability — append-only hit log survives crashes"
     }
   ]
 }
