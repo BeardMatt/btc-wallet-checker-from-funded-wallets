@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-01",
+      "title": "Hand-rolled address encoding",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 49780.9,
+      "hot_loop_seconds": 1.004,
+      "wall_seconds": 1.847,
+      "startup_seconds": 0.843,
+      "delta_vs_previous": "-8.9%",
+      "notes": "Hit-path encoding via base58.CheckEncode and bech32/bech32m primitives (no Address types). 10k-key cross-validation vs btcd passes. Hot loop unchanged — encode only runs on hits; delta is run variance."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "519ed60",
       "plan_id": "medium-03",
       "title": "Batch keys per goroutine",

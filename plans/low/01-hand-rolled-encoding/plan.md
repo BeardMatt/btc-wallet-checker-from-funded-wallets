@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-01` |
 | **Priority** | Low |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `high-01` |
 | **Estimated gain** | Marginal after hash-based lookup |
 
@@ -65,8 +65,8 @@ Generate 10,000 random keys; compare hand-rolled vs btcd output for all five for
 
 ## Verification
 
-- [ ] 100% match vs btcd on test vectors
-- [ ] No btcd import needed in encode path (optional cleanup)
+- [x] 100% match vs btcd on 10,000 random keys (all five formats)
+- [x] Encode path uses base58/bech32 primitives only (no Address types)
 
 ## Rollback
 

@@ -95,7 +95,7 @@
       "path": "low/01-hand-rolled-encoding",
       "title": "Hand-rolled address encoding",
       "priority": "low",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["high-01"],
       "estimated_gain": "Marginal after hash-based lookup"
     },
