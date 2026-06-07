@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "standard_command": "./btcfind 50000 8",
+  "metrics": {
+    "keys_per_second": "Hot-loop throughput from program output",
+    "hot_loop_seconds": "Time spent in key generation + lookup loop",
+    "startup_seconds": "Wall time minus hot_loop_seconds (load + sort funded.tsv)",
+    "wall_seconds": "Total real time for the full command"
+  },
+  "entries": [
+    {
+      "date": "2026-06-07",
+      "commit": "e21d2c4",
+      "plan_id": "high-04",
+      "title": "Fix worker count (use all threads)",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 40519.54,
+      "hot_loop_seconds": 1.234,
+      "wall_seconds": 28.648,
+      "startup_seconds": 27.414,
+      "delta_vs_previous": null,
+      "notes": "First tracked benchmark after high-04. Replaces threads-1 worker spawn with full thread count."
+    },
+    {
+      "date": "2026-06-07",
+      "commit": null,
+      "plan_id": "pre-high-04",
+      "title": "Before high-04 (informal)",
+      "command": "./btcfind 5000 4",
+      "num_keys": 5000,
+      "threads": 4,
+      "keys_per_second": 30795.28,
+      "hot_loop_seconds": 0.162,
+      "wall_seconds": null,
+      "startup_seconds": null,
+      "delta_vs_previous": null,
+      "notes": "Informal pre-tracking benchmark. Different command params — not directly comparable to standard_command."
+    }
+  ]
+}
