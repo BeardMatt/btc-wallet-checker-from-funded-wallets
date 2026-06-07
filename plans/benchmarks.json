@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "ae3793b",
+      "commit": "08caea6",
       "plan_id": "high-03",
       "title": "Defer WIF encoding until hit",
       "command": "./btcfind 50000 8",
