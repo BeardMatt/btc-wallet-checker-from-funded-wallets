@@ -110,8 +110,10 @@ Sort by date descending. Flag entries where `command` differs from `standard_com
 
 ```bash
 go build -o btcfind .
-./btcfind <num_keys> <threads>
+./btcfind <num_keys> [threads]
 ```
+
+`threads` is optional — defaults to `runtime.NumCPU()`. Pass `0` or omit for auto; pass an explicit number to override (e.g. `./btcfind 50000 8` for benchmarks).
 
 `funded.tsv` is downloaded automatically on first run if missing (see `funded_download.go`).
 

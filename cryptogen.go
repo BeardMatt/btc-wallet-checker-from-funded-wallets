@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -19,8 +20,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 3 {
-		fmt.Printf("%s <number of wallets to try> <threads>\n", os.Args[0])
+	if len(os.Args) < 2 {
+		fmt.Printf("%s <number of wallets to try> [threads]\n", os.Args[0])
 		return
 	}
 
@@ -29,14 +30,19 @@ func main() {
 		panic("couldn't get number of wallets")
 	}
 
-	threads, err := strconv.Atoi(os.Args[2])
-	if err != nil {
-		panic("couldn't get threads")
+	threads := 0
+	if len(os.Args) >= 3 {
+		threads, err = strconv.Atoi(os.Args[2])
+		if err != nil {
+			panic("couldn't get threads")
+		}
 	}
+
 	workers := threads
 	if workers < 1 {
-		workers = 1
+		workers = runtime.NumCPU()
 	}
+	fmt.Printf("Using %d workers\n", workers)
 
 	ensureFunded()
 	funded := loadFunded()

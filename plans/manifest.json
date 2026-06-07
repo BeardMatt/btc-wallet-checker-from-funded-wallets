@@ -13,7 +13,8 @@
     "medium-03",
     "low-01",
     "low-02",
-    "low-03"
+    "low-03",
+    "low-04"
   ],
   "plans": [
     {
@@ -114,6 +115,15 @@
       "status": "pending",
       "depends_on": ["high-01", "high-02"],
       "estimated_gain": "Linear scale-out; not single-machine optimization"
+    },
+    {
+      "id": "low-04",
+      "path": "low/04-auto-thread-count",
+      "title": "Default thread count to CPU count",
+      "priority": "low",
+      "status": "completed",
+      "depends_on": ["high-04"],
+      "estimated_gain": "Convenience — default to runtime.NumCPU()"
     }
   ]
 }

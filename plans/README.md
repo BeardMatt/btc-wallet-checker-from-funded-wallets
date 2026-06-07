@@ -20,7 +20,7 @@ plans/
 ├── manifest.json       # plan index (status, deps, order)
 ├── high/               # high-impact plans (4)
 ├── medium/             # medium-impact plans (4)
-└── low/                # low-priority plans (3)
+└── low/                # low-priority plans (4)
 ```
 
 Each plan lives at `<tier>/<slug>/plan.md`.
@@ -42,6 +42,7 @@ Work through plans in this order to respect dependencies:
 | 9 | `low-01` | Hand-rolled encoding |
 | 10 | `low-02` | GPU / assembly secp256k1 |
 | 11 | `low-03` | Distributed search |
+| 12 | `low-04` | Default thread count to CPU count |
 
 ## Status workflow
 

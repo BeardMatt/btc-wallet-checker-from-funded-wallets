@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": null,
+      "plan_id": "low-04",
+      "title": "Default thread count to CPU count",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 40685.6,
+      "hot_loop_seconds": 1.229,
+      "wall_seconds": 29.399,
+      "startup_seconds": 28.17,
+      "delta_vs_previous": "-0.7%",
+      "notes": "Convenience change only — threads arg now optional, defaults to runtime.NumCPU(). Standard benchmark unchanged."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "08caea6",
       "plan_id": "high-03",
       "title": "Defer WIF encoding until hit",
