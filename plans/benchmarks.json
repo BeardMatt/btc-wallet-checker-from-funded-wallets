@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "6117518",
+      "commit": "c751d4f",
       "plan_id": "low-07",
       "title": "Output UX — pretty terminal, progress, wallet recovery",
       "command": "./btcfind 50000 8",
