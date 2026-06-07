@@ -58,7 +58,7 @@
       "path": "medium/01-partition-funded-set",
       "title": "Partition funded set by address type",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "Foundation for hash lookups and bloom filter"
     },

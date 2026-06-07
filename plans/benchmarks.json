@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "9659117",
+      "plan_id": "medium-01",
+      "title": "Partition funded set by address type",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 39501.03,
+      "hot_loop_seconds": 1.266,
+      "wall_seconds": 57.626,
+      "startup_seconds": 56.36,
+      "delta_vs_previous": "-1.1%",
+      "notes": "FundedSets with legacy/p2sh/segwit/taproot byte slices plus Other for non-decodable rows. Fast load decode via base58/bech32. Load+decode 44.6s, sort 11.5s (startup +166% vs medium-04). Hot loop -1.1%. Total unchanged: 31,733,986."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "027247c",
       "plan_id": "medium-04",
       "title": "Faster TSV parsing at startup",

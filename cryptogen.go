@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"time"
 
@@ -44,7 +43,7 @@ func main() {
 	fmt.Printf("Using %d workers\n", workers)
 
 	ensureFunded()
-	funded := loadFunded()
+	fundedSets := loadFunded()
 
 	printer := message.NewPrinter(language.English)
 	printer.Printf("Testing %d keys... ", numtests)
@@ -55,7 +54,7 @@ func main() {
 	for range numtests {
 		wallet := <-ch
 		for _, addr := range wallet.Addresses {
-			if inFunded(funded, addr) {
+			if inFunded(fundedSets, addr) {
 				privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
 				wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
 				if err != nil {
@@ -84,7 +83,7 @@ func newWallet(n int) chan bitcoin.Wallet {
 	return ch
 }
 
-func loadFunded() []string {
+func loadFunded() FundedSets {
 	fmt.Println("Loading funded wallets...")
 	loadStart := time.Now()
 
@@ -102,31 +101,41 @@ func loadFunded() []string {
 		// header consumed
 	}
 
-	funded := make([]string, 0, 32_000_000)
+	sets := FundedSets{
+		Legacy:    make([][20]byte, 0, 16_000_000),
+		P2SH:      make([][20]byte, 0, 10_000_000),
+		SegwitV0:  make([][20]byte, 0, 6_000_000),
+		TaprootV1: make([][32]byte, 0, 1_000_000),
+		Other:     make([]string, 0, 600_000),
+	}
 
 	for scanner.Scan() {
 		addr, balance, ok := parseTSVLine(scanner.Bytes())
 		if !ok || balance < 30000 {
 			continue
 		}
-		funded = append(funded, string(addr))
+		sets.addAddress(string(addr))
 	}
 	if err := scanner.Err(); err != nil {
 		panic(err)
 	}
 
 	printer := message.NewPrinter(language.English)
-	printer.Printf("Loaded %d wallets in %.2fs\n", len(funded), time.Since(loadStart).Seconds())
+	printer.Printf(
+		"Loaded %d wallets in %.2fs (legacy=%d p2sh=%d segwit=%d taproot=%d other=%d)\n",
+		sets.Total(),
+		time.Since(loadStart).Seconds(),
+		len(sets.Legacy),
+		len(sets.P2SH),
+		len(sets.SegwitV0),
+		len(sets.TaprootV1),
+		len(sets.Other),
+	)
 
 	fmt.Println("Sorting funded wallets...")
 	sortStart := time.Now()
-	sort.Strings(funded)
+	sets.Sort()
 	fmt.Printf("Finished sorting funded wallets in %.2fs\n", time.Since(sortStart).Seconds())
 
-	return funded
-}
-
-func inFunded(funded []string, address string) bool {
-	idx := sort.SearchStrings(funded, address)
-	return idx < len(funded) && funded[idx] == address
+	return sets
 }

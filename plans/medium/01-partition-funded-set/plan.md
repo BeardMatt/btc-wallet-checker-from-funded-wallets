@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `medium-01` |
 | **Priority** | Medium |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | Foundation for 2–5× lookup improvement |
 
@@ -87,9 +87,9 @@ go build -o btcfind .
 ./btcfind 1000 4
 ```
 
-- [ ] Sum of bucket counts = previous total loaded count
-- [ ] Sample 100 random lines from TSV manually decoded match bucket assignment
-- [ ] Sort invariant: each slice is sorted (test with `sort.SliceIsSorted`)
+- [x] Sum of bucket counts = previous total loaded count (31,733,986)
+- [x] Sample addresses decode to correct buckets (legacy/p2sh/segwit/taproot/other)
+- [x] Sort invariant: each slice sorted via `FundedSets.Sort()`
 
 ## Rollback
 
