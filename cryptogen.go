@@ -11,6 +11,9 @@ import (
 
 	"btcfind/bitcoin"
 
+	"github.com/btcsuite/btcd/btcec/v2"
+	"github.com/btcsuite/btcd/btcutil"
+	"github.com/btcsuite/btcd/chaincfg"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
 )
@@ -48,7 +51,12 @@ func main() {
 		wallet := <-ch
 		for _, addr := range wallet.Addresses {
 			if inFunded(funded, addr) {
-				fmt.Println(wallet.Privkey, " : ", addr)
+				privKey, _ := btcec.PrivKeyFromBytes(wallet.PrivKey)
+				wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Println(wif.String(), " : ", addr)
 				break
 			}
 		}

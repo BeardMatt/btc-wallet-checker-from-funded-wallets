@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `high-03` |
 | **Priority** | High |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | 10–20% hot-loop throughput |
 

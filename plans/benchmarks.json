@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "ae3793b",
+      "plan_id": "high-03",
+      "title": "Defer WIF encoding until hit",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 40974.32,
+      "hot_loop_seconds": 1.220,
+      "wall_seconds": 28.604,
+      "startup_seconds": 27.384,
+      "delta_vs_previous": "+1.1%",
+      "notes": "WIF base58 encoding moved from GenKeypair to hit branch only. Modest gain — address string encoding still dominates hot loop."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "e21d2c4",
       "plan_id": "high-04",
       "title": "Fix worker count (use all threads)",

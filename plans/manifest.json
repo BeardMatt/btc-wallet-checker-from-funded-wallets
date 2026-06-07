@@ -39,7 +39,7 @@
       "path": "high/03-defer-wif-encoding",
       "title": "Defer WIF encoding until hit",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "10-20% hot-loop throughput"
     },

@@ -9,17 +9,12 @@ import (
 )
 
 type Wallet struct {
-	Privkey   string
+	PrivKey   []byte
 	Addresses []string
 }
 
 func GenKeypair() Wallet {
 	privKey, err := btcec.NewPrivateKey()
-	if err != nil {
-		panic(err)
-	}
-
-	wif, err := btcutil.NewWIF(privKey, &chaincfg.MainNetParams, true)
 	if err != nil {
 		panic(err)
 	}
@@ -57,7 +52,7 @@ func GenKeypair() Wallet {
 	}
 
 	return Wallet{
-		Privkey:   wif.String(),
+		PrivKey:   privKey.Serialize(),
 		Addresses: addresses,
 	}
 }
