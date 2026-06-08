@@ -17,6 +17,7 @@ type cliConfig struct {
 	forever              bool
 	checkpointInterval   time.Duration
 	maxKeys              uint64
+	resetSession         bool
 	simulateHit    bool
 	simulateHitAt  int
 	verifyLookup   bool
@@ -42,6 +43,8 @@ func parseCLI(args []string) (cliConfig, error) {
 		switch {
 		case arg == "--forever":
 			cfg.forever = true
+		case arg == "--reset-session":
+			cfg.resetSession = true
 		case strings.HasPrefix(arg, "--checkpoint-interval="):
 			d, err := time.ParseDuration(strings.TrimPrefix(arg, "--checkpoint-interval="))
 			if err != nil || d <= 0 {
@@ -224,7 +227,8 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  --verbose                        Verbose bloom filter details at load time")
 	fmt.Fprintln(os.Stderr, "  --forever                        Run until interrupted; checkpoints to btcfind.session")
 	fmt.Fprintln(os.Stderr, "  --checkpoint-interval DURATION   Session checkpoint interval (default 60s)")
-	fmt.Fprintln(os.Stderr, "  --max-keys N                     Safety cap on total keys in forever mode")
+	fmt.Fprintln(os.Stderr, "  --max-keys N                     Per-run key cap in forever mode")
+	fmt.Fprintln(os.Stderr, "  --reset-session                  Clear btcfind.session and start fresh stats")
 	fmt.Fprintln(os.Stderr, "  --min-balance SATS               Minimum funded balance to index (default 30000)")
 	fmt.Fprintln(os.Stderr, "  --formats LIST                   Address types to derive/check (comma-separated)")
 	fmt.Fprintln(os.Stderr, "                                 legacy, legacy-compressed, legacy-uncompressed,")

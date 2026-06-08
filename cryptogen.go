@@ -102,12 +102,16 @@ func runBoundedSearch(cfg cliConfig, workers int, fundedSets FundedSets, numKeys
 }
 
 func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
-	session := loadSession()
-	if session.StartedAt.IsZero() {
-		session.StartedAt = time.Now().UTC()
+	session, err := initForeverSession(cfg.resetSession)
+	if err != nil {
+		appUI.Warnf("could not reset session: %v\n", err)
+	}
+	if cfg.resetSession && !appUI.quiet {
+		appUI.Infof("  Session reset — starting fresh stats in %s\n", sessionFile)
 	}
 
 	var stopFlag atomic.Bool
+	var maxKeysReached bool
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
@@ -121,10 +125,12 @@ func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
 	lastCheckpoint := time.Now()
 
 	processed := uint64(0)
+	runProcessed := uint64(0)
 	hits := session.TotalHits
 
 	for !stopFlag.Load() {
-		if cfg.maxKeys > 0 && session.TotalKeysTried+processed >= cfg.maxKeys {
+		if cfg.maxKeys > 0 && runProcessed >= cfg.maxKeys {
+			maxKeysReached = true
 			break
 		}
 
@@ -133,7 +139,8 @@ func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
 			if stopFlag.Load() {
 				break
 			}
-			if cfg.maxKeys > 0 && session.TotalKeysTried+processed >= cfg.maxKeys {
+			if cfg.maxKeys > 0 && runProcessed >= cfg.maxKeys {
+				maxKeysReached = true
 				break
 			}
 
@@ -142,6 +149,10 @@ func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
 				hits++
 			}
 			processed++
+			runProcessed++
+		}
+		if maxKeysReached {
+			break
 		}
 
 		now := time.Now()
@@ -172,11 +183,32 @@ func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
 	}
 	_ = writeSession(session)
 	appUI.ClearProgress()
-	appUI.Infof("Session checkpoint saved to %s (%s keys tried, %s hits)\n",
-		sessionFile,
-		appUI.formatInt(int64(session.TotalKeysTried)),
-		appUI.formatInt(int64(session.TotalHits)),
-	)
+
+	switch {
+	case maxKeysReached:
+		appUI.Infof(
+			"Run limit reached (--max-keys %s); tried %s keys this run. Session saved to %s (%s lifetime keys, %s hits)\n",
+			appUI.formatInt(int64(cfg.maxKeys)),
+			appUI.formatInt(int64(runProcessed)),
+			sessionFile,
+			appUI.formatInt(int64(session.TotalKeysTried)),
+			appUI.formatInt(int64(session.TotalHits)),
+		)
+	case stopFlag.Load():
+		appUI.Infof(
+			"Interrupted; session saved to %s (%s lifetime keys, %s hits)\n",
+			sessionFile,
+			appUI.formatInt(int64(session.TotalKeysTried)),
+			appUI.formatInt(int64(session.TotalHits)),
+		)
+	default:
+		appUI.Infof(
+			"Session checkpoint saved to %s (%s lifetime keys, %s hits)\n",
+			sessionFile,
+			appUI.formatInt(int64(session.TotalKeysTried)),
+			appUI.formatInt(int64(session.TotalHits)),
+		)
+	}
 }
 
 func processWallet(cfg cliConfig, fundedSets FundedSets, wallet bitcoin.Wallet, keyIndex int) bool {

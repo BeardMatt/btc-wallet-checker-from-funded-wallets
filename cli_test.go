@@ -32,6 +32,16 @@ func TestParseCLIFormatsInjectConflict(t *testing.T) {
 	}
 }
 
+func TestParseCLIForeverFlags(t *testing.T) {
+	cfg, err := parseCLI([]string{"--forever", "8", "--reset-session", "--max-keys", "1000"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.forever || cfg.threads != 8 || !cfg.resetSession || cfg.maxKeys != 1000 {
+		t.Fatalf("unexpected config: %+v", cfg)
+	}
+}
+
 func TestParseCLIInject(t *testing.T) {
 	cfg, err := parseCLI([]string{"1", "--inject-index-hit=legacy", "--simulate-hit-verify-lookup"})
 	if err != nil {

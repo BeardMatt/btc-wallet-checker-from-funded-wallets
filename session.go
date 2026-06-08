@@ -37,6 +37,36 @@ func loadSession() sessionState {
 	return s
 }
 
+func resetSessionFile() error {
+	if err := os.Remove(sessionFile); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	tmp := sessionFile + ".tmp"
+	if err := os.Remove(tmp); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+func initForeverSession(reset bool) (sessionState, error) {
+	now := time.Now().UTC()
+	if reset {
+		if err := resetSessionFile(); err != nil {
+			return sessionState{}, err
+		}
+		return sessionState{
+			StartedAt:      now,
+			LastCheckpoint: now,
+		}, nil
+	}
+
+	session := loadSession()
+	if session.StartedAt.IsZero() {
+		session.StartedAt = now
+	}
+	return session, nil
+}
+
 func writeSession(s sessionState) error {
 	s.LastCheckpoint = time.Now().UTC()
 	data, err := json.MarshalIndent(s, "", "  ")
