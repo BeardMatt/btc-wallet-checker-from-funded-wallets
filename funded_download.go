@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -16,11 +17,17 @@ const (
 	fundedFile        = "funded.tsv"
 )
 
+var fetchRemoteLastModified = remoteLastModified
+
 func ensureFunded() {
 	u := ui()
 	info, err := os.Stat(fundedFile)
 	if os.IsNotExist(err) {
-		u.Section("Downloading funded.tsv")
+		if u.quiet {
+			u.PrintfErr("funded.tsv not found, downloading...\n")
+		} else {
+			u.Section("Downloading funded.tsv")
+		}
 		if err := downloadFunded(); err != nil {
 			panic(err)
 		}
@@ -30,10 +37,36 @@ func ensureFunded() {
 		panic(err)
 	}
 
-	remoteMod, err := remoteLastModified()
+	if !u.quiet {
+		u.Section("Funded data check")
+		logLocalFundedFile(u, info)
+		if u.verbose {
+			if abs, err := filepath.Abs(fundedFile); err == nil {
+				u.Infof("  path: %s\n", abs)
+			}
+			u.Infof("  remote URL: %s\n", fundedDownloadURL)
+		}
+	}
+
+	u.ProgressIndeterminate("Checking for updates…")
+	headStart := time.Now()
+	remoteMod, err := fetchRemoteLastModified()
+	headElapsed := time.Since(headStart)
+	u.ClearProgress()
+
 	if err != nil {
 		u.Warnf("could not check for updates (%v), using local file\n", err)
+		if !u.quiet {
+			u.Infof("  Using local file\n")
+		}
 		return
+	}
+
+	if !u.quiet {
+		if u.verbose {
+			u.Infof("  HEAD request: %dms\n", headElapsed.Milliseconds())
+		}
+		u.Infof("  remote      %s\n", remoteMod.Format(time.RFC3339))
 	}
 
 	if remoteMod.After(info.ModTime()) {
@@ -42,6 +75,9 @@ func ensureFunded() {
 			info.ModTime().Format(time.RFC3339),
 			remoteMod.Format(time.RFC3339),
 		)
+		if u.verbose {
+			u.Infof("  note: download will remove %s\n", fundedCacheFile)
+		}
 		u.PrintfErr("Download update? [y/N]: ")
 
 		reader := bufio.NewReader(os.Stdin)
@@ -55,7 +91,21 @@ func ensureFunded() {
 		}
 
 		u.PrintlnErr("Using existing funded.tsv")
+		return
 	}
+
+	if !u.quiet {
+		u.Infof("  Up to date — using local file\n")
+	}
+}
+
+func logLocalFundedFile(u *UI, info os.FileInfo) {
+	u.Infof(
+		"  %s  %s  modified %s\n",
+		fundedFile,
+		formatBytes(info.Size()),
+		info.ModTime().UTC().Format(time.RFC3339),
+	)
 }
 
 func remoteLastModified() (time.Time, error) {
@@ -86,6 +136,9 @@ func remoteLastModified() (time.Time, error) {
 func downloadFunded() error {
 	u := ui()
 	u.Infof("  Source: %s\n", fundedDownloadURL)
+	if u.verbose {
+		u.Infof("  note: will remove %s after download\n", fundedCacheFile)
+	}
 
 	client := &http.Client{}
 	resp, err := client.Get(fundedDownloadURL)

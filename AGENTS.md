@@ -138,6 +138,10 @@ When a wallet is found (or `--simulate-hit`), a framed banner on stderr shows th
 
 Real funded matches are also appended to `wallets.txt` in the working directory (append-only, mode `0600`). `--simulate-hit` does not write this file. **Never commit `wallets.txt`** — it contains private keys.
 
+### Startup output order
+
+Unless `--quiet`: **Banner** → **Workers** → **Funded data check** (local `funded.tsv` size/mtime, remote `Last-Modified`, up-to-date status) → **Loading funded wallets** → **Search**. Use `--verbose` on the check step for URL, path, and HEAD latency.
+
 Examples:
 
 ```bash

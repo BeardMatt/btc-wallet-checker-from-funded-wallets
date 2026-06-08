@@ -184,6 +184,8 @@ func (u *UI) ClearProgress() {
 	u.indeterminateLabel = ""
 	if u.tty {
 		u.PrintfErr("\r\033[K")
+	} else {
+		u.PrintfErr("\n")
 	}
 }
 

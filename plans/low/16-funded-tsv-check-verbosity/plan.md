@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-16` |
 | **Priority** | **Low** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `low-07` |
 | **Estimated gain** | UX — visible funded-data freshness check; no throughput change |
 
@@ -108,11 +108,11 @@ go build -o btcfind .
 ./btcfind 1000 8 --no-color       # same text, no spinner ANSI
 ```
 
-- [ ] Happy path prints local + remote dates and "Up to date"
-- [ ] HEAD failure still warns and continues
-- [ ] `--quiet` suppresses check section
-- [ ] `--verbose` adds URL and timing
-- [ ] Standard benchmark unchanged
+- [x] Happy path prints local + remote dates and "Up to date"
+- [x] HEAD failure still warns and continues
+- [x] `--quiet` suppresses check section
+- [x] `--verbose` adds URL and timing
+- [x] Standard benchmark unchanged
 
 ## Rollback
 

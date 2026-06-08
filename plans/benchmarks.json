@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-16",
+      "title": "Verbosity for funded.tsv check at startup",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 57039.4,
+      "hot_loop_seconds": 0.876587,
+      "wall_seconds": 1.699,
+      "startup_seconds": 0.822,
+      "delta_vs_previous": "+1.3%",
+      "notes": "Funded data check section with local/remote dates and up-to-date line; --quiet skips. Hot loop unchanged."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "308dd00",
       "plan_id": "low-08",
       "title": "Persist discovered wallets to wallets.txt",
