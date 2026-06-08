@@ -265,7 +265,7 @@
       "path": "net/high/01-extract-search-package",
       "title": "Extract shared search package",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "Foundation for coordinator/worker binaries"
     },
@@ -274,7 +274,7 @@
       "path": "net/high/05-cache-http",
       "title": "Funded cache HTTP distribution",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-01"],
       "estimated_gain": "Workers sync funded.cache without manual copy"
     },
@@ -283,7 +283,7 @@
       "path": "net/high/04-tls-auth",
       "title": "TLS + bearer auth",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-05"],
       "estimated_gain": "Internet-facing coordinator security (day one)"
     },
@@ -292,7 +292,7 @@
       "path": "net/high/02-coordinator-core",
       "title": "Coordinator core + Enter-to-start",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-04"],
       "estimated_gain": "Lobby, registration, operator start gate"
     },
@@ -301,7 +301,7 @@
       "path": "net/high/03-worker-binary",
       "title": "Worker binary (per-machine --threads)",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-02"],
       "estimated_gain": "Linear scale-out — N workers ≈ N × local keys/s"
     },
@@ -310,7 +310,7 @@
       "path": "net/medium/03-run-config-sync",
       "title": "Run config sync (formats, min-balance)",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-03"],
       "estimated_gain": "Consistent cluster search parameters"
     },
@@ -319,7 +319,7 @@
       "path": "net/medium/01-stats-aggregation",
       "title": "Cluster stats aggregation",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-03"],
       "estimated_gain": "Aggregate keys/sec and keys tried"
     },
@@ -328,7 +328,7 @@
       "path": "net/medium/02-hit-pipeline",
       "title": "Hit pipeline + coordinator wallets.txt",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-03"],
       "estimated_gain": "Canonical hit log on coordinator"
     },
@@ -337,7 +337,7 @@
       "path": "net/low/01-reconnect",
       "title": "Reconnect + coordinator restart",
       "priority": "low",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-medium-01", "net-medium-02"],
       "estimated_gain": "Worker resilience on network/coordinator failures"
     },
@@ -346,7 +346,7 @@
       "path": "net/low/02-dashboard",
       "title": "Coordinator live dashboard",
       "priority": "low",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-medium-01"],
       "estimated_gain": "Per-worker TTY dashboard"
     },
@@ -355,7 +355,7 @@
       "path": "net/optional/01-mtls",
       "title": "mTLS + cert tooling (optional)",
       "priority": "optional",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-04"],
       "estimated_gain": "Per-worker client certs for public coordinators"
     },
@@ -364,7 +364,7 @@
       "path": "net/optional/02-reverse-tunnel",
       "title": "Reverse tunnel / NAT workers (optional)",
       "priority": "optional",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-03"],
       "estimated_gain": "Proxy + docs for workers behind strict NAT"
     },
@@ -373,7 +373,7 @@
       "path": "net/optional/03-abuse-limits",
       "title": "Public coordinator abuse limits (optional)",
       "priority": "optional",
-      "status": "pending",
+      "status": "completed",
       "depends_on": ["net-high-04"],
       "estimated_gain": "Rate limits and worker caps"
     }

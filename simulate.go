@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"btcfind/bitcoin"
+	"btcfind/funded"
 )
 
 func applyInjectIndexHit(sets FundedSets, keys *bitcoin.LookupKeys, bucket string) (fundedAddress string, err error) {
@@ -64,14 +65,14 @@ func lookupHit20(bf interface{ Test([]byte) bool }, set [][20]byte, key [20]byte
 	if bf != nil && !bf.Test(key[:]) {
 		return false
 	}
-	return inFunded20(set, key)
+	return funded.InFunded20(set, key)
 }
 
 func lookupHit32(bf interface{ Test([]byte) bool }, set [][32]byte, key [32]byte) bool {
 	if bf != nil && !bf.Test(key[:]) {
 		return false
 	}
-	return inFunded32(set, key)
+	return funded.InFunded32(set, key)
 }
 
 func matchKindName(kind bitcoin.MatchKind) string {

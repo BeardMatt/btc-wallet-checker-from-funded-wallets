@@ -1,19 +1,15 @@
 package main
 
 import (
-	"bufio"
+	"context"
 	"fmt"
 	"os"
-	"os/signal"
 	"runtime"
-	"sync/atomic"
-	"syscall"
 	"time"
 
-	"btcfind/bitcoin"
+	"btcfind/funded"
+	"btcfind/search"
 )
-
-const keyBatchSize = 128
 
 func main() {
 	cfg, err := parseCLI(os.Args[1:])
@@ -49,301 +45,114 @@ func main() {
 		appUI.Infof("  Min balance: %s sats\n", appUI.formatInt(int64(cfg.minBalance)))
 	}
 
-	defer unmapActiveCache()
+	defer funded.UnmapActive()
 
-	ensureFunded()
+	funded.EnsureTSV(mainReporter{})
 	fundedSets := loadFunded(cfg.minBalance)
 
 	appUI.Section("Search")
+	searchCfg := search.Config{
+		Threads:            workers,
+		Formats:            cfg.formats,
+		NumKeys:            cfg.numKeys,
+		Forever:            cfg.forever,
+		MaxKeys:            cfg.maxKeys,
+		CheckpointInterval: cfg.checkpointInterval,
+		ResetSession:       cfg.resetSession,
+		SimulateHit:        cfg.simulateHit,
+		SimulateHitAt:      cfg.simulateHitAt,
+		VerifyLookup:       cfg.verifyLookup,
+		InjectIndexHit:     cfg.injectIndexHit,
+	}
+
+	hooks := mainSearchHooks(cfg, fundedSets)
+
+	ctx := context.Background()
 	if cfg.forever {
 		appUI.BeginForeverSearch()
-		runForeverSearch(cfg, workers, fundedSets)
+		_, _ = search.Run(ctx, searchCfg, fundedSets, hooks)
+		printForeverExit(cfg)
 		return
 	}
 
 	appUI.BeginSearch(cfg.numKeys)
-	hits := runBoundedSearch(cfg, workers, fundedSets, cfg.numKeys, 0)
-	_ = hits
+	_, _ = search.Run(ctx, searchCfg, fundedSets, hooks)
 }
 
-func runBoundedSearch(cfg cliConfig, workers int, fundedSets FundedSets, numKeys int, sessionBase uint64) uint64 {
-	start := time.Now()
-	ch := newWallet(workers, fundedSets, cfg.formats)
-	lastProgress := time.Now()
-	processed := 0
-	var hits uint64
+type mainReporter struct{}
 
-	for processed < numKeys {
-		batch := <-ch
-		for _, wallet := range batch {
-			if processed >= numKeys {
-				break
-			}
-
-			keyIndex := int(sessionBase) + processed + 1
-			hit := processWallet(cfg, fundedSets, wallet, keyIndex)
-			if hit {
-				hits++
-			}
-			processed++
-		}
-
-		now := time.Now()
-		if now.Sub(lastProgress) >= 100*time.Millisecond {
-			appUI.SearchProgress(processed, numKeys, now.Sub(start))
-			lastProgress = now
-		}
-	}
-
-	took := time.Since(start)
-	avg := float64(numKeys) / took.Seconds()
-	appUI.PrintSummary(took, numKeys, avg)
-	return hits
+func (mainReporter) Section(title string)                         { ui().Section(title) }
+func (mainReporter) Infof(format string, args ...any)             { ui().Infof(format, args...) }
+func (mainReporter) Warnf(format string, args ...any)             { ui().Warnf(format, args...) }
+func (mainReporter) PrintfErr(format string, args ...any)         { ui().PrintfErr(format, args...) }
+func (mainReporter) PrintlnErr(args ...any)                       { ui().PrintlnErr(fmt.Sprint(args...)) }
+func (mainReporter) Progress(label string, cur, total int64)      { ui().Progress(label, cur, total) }
+func (mainReporter) ProgressIndeterminate(label string)             { ui().ProgressIndeterminate(label) }
+func (mainReporter) ClearProgress()                               { ui().ClearProgress() }
+func (mainReporter) LogFundedLoad(sets funded.Sets, elapsed time.Duration, fromCache bool) {
+	ui().LogFundedLoad(toMainSets(sets), elapsed, fromCache)
+}
+func (mainReporter) LogBloomBuild(sets funded.Sets, elapsed time.Duration) {
+	ui().LogBloomBuild(toMainSets(sets), elapsed)
+}
+func (mainReporter) Quiet() bool { return ui().quiet }
+func (mainReporter) Verbose() bool {
+	return ui().verbose
 }
 
-func runForeverSearch(cfg cliConfig, workers int, fundedSets FundedSets) {
-	session, err := initForeverSession(cfg.resetSession)
-	if err != nil {
-		appUI.Warnf("could not reset session: %v\n", err)
-	}
-	if cfg.resetSession && !appUI.quiet {
-		appUI.Infof("  Session reset — starting fresh stats in %s\n", sessionFile)
-	}
-
-	var stopFlag atomic.Bool
-	var maxKeysReached bool
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigCh
-		stopFlag.Store(true)
-	}()
-
-	start := time.Now()
-	ch := newWallet(workers, fundedSets, cfg.formats)
-	lastProgress := time.Now()
-	lastCheckpoint := time.Now()
-
-	processed := uint64(0)
-	runProcessed := uint64(0)
-	hits := session.TotalHits
-
-	for !stopFlag.Load() {
-		if cfg.maxKeys > 0 && runProcessed >= cfg.maxKeys {
-			maxKeysReached = true
-			break
-		}
-
-		batch := <-ch
-		for _, wallet := range batch {
-			if stopFlag.Load() {
-				break
+func mainSearchHooks(cfg cliConfig, sets funded.Sets) search.Hooks {
+	return search.Hooks{
+		OnProgress: func(processed, total int, elapsed time.Duration) {
+			appUI.SearchProgress(processed, total, elapsed)
+		},
+		OnForeverProgress: func(totalKeys uint64, elapsed time.Duration, hits uint64) {
+			appUI.ForeverProgress(totalKeys, elapsed, hits)
+		},
+		OnSummary: func(took time.Duration, numKeys int, avg float64) {
+			appUI.PrintSummary(took, numKeys, avg)
+		},
+		OnHit: func(ev search.HitEvent) error {
+			ui().PrintHit(ev.Wallet, ev.Kind, ev.KeyIndex, ev.BalanceSats, ev.Simulated)
+			return nil
+		},
+		OnInjectLog: func(bucket, addr string) {
+			ui().Infof("  inject-index-hit: bucket=%s funded_address=%s\n", bucket, addr)
+		},
+		OnLookupVerify: func(ev search.LookupVerifyEvent) {
+			u := ui()
+			u.Printf(
+				"lookup verify: legacy_compressed=%t legacy_uncompressed=%t segwit_v0=%t p2sh=%t taproot=%t real_match=%t",
+				ev.LegacyCompressed, ev.LegacyUncompressed, ev.SegwitV0, ev.P2SH, ev.Taproot, ev.RealMatch,
+			)
+			if ev.RealMatch {
+				u.Printf(" kind=%s", ev.KindName)
 			}
-			if cfg.maxKeys > 0 && runProcessed >= cfg.maxKeys {
-				maxKeysReached = true
-				break
-			}
-
-			keyIndex := int(session.TotalKeysTried + processed + 1)
-			if processWallet(cfg, fundedSets, wallet, keyIndex) {
-				hits++
-			}
-			processed++
-			runProcessed++
-		}
-		if maxKeysReached {
-			break
-		}
-
-		now := time.Now()
-		elapsed := now.Sub(start)
-		if now.Sub(lastProgress) >= 100*time.Millisecond {
-			appUI.ForeverProgress(session.TotalKeysTried+processed, elapsed, hits)
-			lastProgress = now
-		}
-		if now.Sub(lastCheckpoint) >= cfg.checkpointInterval {
-			kps := float64(processed) / elapsed.Seconds()
-			if kps > session.BestKeysPerSecond {
-				session.BestKeysPerSecond = kps
-			}
-			session.TotalKeysTried += processed
-			session.TotalHits = hits
-			_ = writeSession(session)
-			processed = 0
-			start = time.Now()
-			lastCheckpoint = now
-		}
-	}
-
-	session.TotalKeysTried += processed
-	session.TotalHits = hits
-	kps := float64(session.TotalKeysTried) / time.Since(session.StartedAt).Seconds()
-	if kps > session.BestKeysPerSecond {
-		session.BestKeysPerSecond = kps
-	}
-	_ = writeSession(session)
-	appUI.ClearProgress()
-
-	switch {
-	case maxKeysReached:
-		appUI.Infof(
-			"Run limit reached (--max-keys %s); tried %s keys this run. Session saved to %s (%s lifetime keys, %s hits)\n",
-			appUI.formatInt(int64(cfg.maxKeys)),
-			appUI.formatInt(int64(runProcessed)),
-			sessionFile,
-			appUI.formatInt(int64(session.TotalKeysTried)),
-			appUI.formatInt(int64(session.TotalHits)),
-		)
-	case stopFlag.Load():
-		appUI.Infof(
-			"Interrupted; session saved to %s (%s lifetime keys, %s hits)\n",
-			sessionFile,
-			appUI.formatInt(int64(session.TotalKeysTried)),
-			appUI.formatInt(int64(session.TotalHits)),
-		)
-	default:
-		appUI.Infof(
-			"Session checkpoint saved to %s (%s lifetime keys, %s hits)\n",
-			sessionFile,
-			appUI.formatInt(int64(session.TotalKeysTried)),
-			appUI.formatInt(int64(session.TotalHits)),
-		)
+			u.PrintlnErr("")
+		},
 	}
 }
 
-func processWallet(cfg cliConfig, fundedSets FundedSets, wallet bitcoin.Wallet, keyIndex int) bool {
-	keys := wallet.Keys
-	if cfg.injectIndexHit != "" && keyIndex == cfg.simulateHitAt {
-		fundedAddr, err := applyInjectIndexHit(fundedSets, &keys, cfg.injectIndexHit)
-		if err != nil {
-			panic(err)
-		}
-		appUI.Infof("  inject-index-hit: bucket=%s funded_address=%s\n", cfg.injectIndexHit, fundedAddr)
-	}
-
-	kind, ok := matchFunded(fundedSets, keys, cfg.formats)
-	if ok {
-		wallet.Keys = keys
-		appUI.PrintHit(wallet, kind, keyIndex, fundedSets.balanceForMatch(kind, keys), false)
-	}
-
-	if cfg.verifyLookup && keyIndex == cfg.simulateHitAt {
-		printLookupVerify(fundedSets, keys, kind, ok)
-	}
-
-	if cfg.simulateHit && keyIndex == cfg.simulateHitAt && !ok {
-		wallet.Keys = keys
-		appUI.PrintHit(wallet, simulateDisplayKind(keys, kind, ok), keyIndex, 0, true)
-	}
-
-	return ok
-}
-
-func newWallet(n int, sets FundedSets, mask bitcoin.FormatMask) chan []bitcoin.Wallet {
-	ch := make(chan []bitcoin.Wallet, n)
-	for range n {
-		go func() {
-			batch := make([]bitcoin.Wallet, 0, keyBatchSize)
-			for {
-				batch = append(batch, genWalletStaged(sets, mask))
-				if len(batch) >= keyBatchSize {
-					ch <- batch
-					batch = make([]bitcoin.Wallet, 0, keyBatchSize)
-				}
-			}
-		}()
-	}
-	return ch
-}
-
-func loadFunded(minBalance uint64) FundedSets {
+func loadFunded(minBalance uint64) funded.Sets {
 	if minBalance == 0 {
 		minBalance = defaultMinBalanceSats
 	}
-	loadStart := time.Now()
-
-	tsvInfo, err := os.Stat("funded.tsv")
+	sets, err := funded.Load(funded.LoadOpts{
+		MinBalance: minBalance,
+		Reporter:   mainReporter{},
+	})
 	if err != nil {
-		panic("couldn't stat funded.tsv")
+		panic(err)
 	}
-	srcMtime := tsvInfo.ModTime()
-	fileSize := tsvInfo.Size()
-
-	appUI.Section("Loading funded wallets")
-
-	var sets FundedSets
-	var cacheErr error
-	cachePath := fundedCachePath(minBalance)
-	sets, cacheErr = mmapFundedCache(cachePath, srcMtime, minBalance)
-	if cacheErr != nil {
-		sets, cacheErr = readFundedCache(cachePath, srcMtime, minBalance)
-	}
-	if cacheErr == nil {
-		if !sets.bloomsComplete() {
-			appUI.ProgressIndeterminate("Upgrading cache (building bloom filters)")
-			sets.ensureBlooms()
-			appUI.ClearProgress()
-			if err := writeFundedCache(cachePath, sets, srcMtime); err != nil {
-				appUI.Warnf("could not upgrade cache: %v\n", err)
-			}
-		}
-		appUI.LogFundedLoad(sets, time.Since(loadStart), true)
-		return sets
-	}
-
-	sets = parseFundedTSV(fileSize, minBalance)
-	appUI.ProgressIndeterminate("Sorting funded wallets")
-	sortStart := time.Now()
-	sets.Sort()
-	appUI.ClearProgress()
-	appUI.Infof("  Sorted in %.2fs\n", time.Since(sortStart).Seconds())
-
-	sets.ensureBlooms()
-
-	if err := writeFundedCache(cachePath, sets, srcMtime); err != nil {
-		appUI.Warnf("could not write cache: %v\n", err)
-	} else {
-		appUI.Infof("  Wrote %s\n", cachePath)
-	}
-
-	appUI.LogFundedLoad(sets, time.Since(loadStart), false)
 	return sets
 }
 
-func parseFundedTSV(fileSize int64, minBalance uint64) FundedSets {
-	file, err := os.Open("funded.tsv")
-	if err != nil {
-		panic("couldn't open funded.tsv")
-	}
-	defer file.Close()
+func toMainSets(s funded.Sets) FundedSets { return s }
 
-	counter := &byteCounter{r: file}
-	scanner := bufio.NewScanner(counter)
-	buf := make([]byte, 0, 1024*1024)
-	scanner.Buffer(buf, 10*1024*1024)
-
-	if scanner.Scan() {
-		// header consumed
-	}
-
-	builder := newFundedBuilder(minBalance)
-
-	lastProgress := time.Now()
-	for scanner.Scan() {
-		if time.Since(lastProgress) >= 200*time.Millisecond {
-			appUI.Progress("Parsing funded.tsv", counter.n, fileSize)
-			lastProgress = time.Now()
-		}
-		addr, balance, ok := parseTSVLine(scanner.Bytes())
-		if !ok {
-			continue
-		}
-		builder.add(string(addr), uint64(balance))
-	}
+func printForeverExit(cfg cliConfig) {
 	appUI.ClearProgress()
-	if err := scanner.Err(); err != nil {
-		panic(err)
+	// Session messages are written by search package; mirror prior UX when max-keys set.
+	if cfg.maxKeys > 0 && !appUI.quiet {
+		appUI.Infof("Forever run finished (--max-keys %s)\n", appUI.formatInt(int64(cfg.maxKeys)))
 	}
-
-	return builder.build()
 }
+

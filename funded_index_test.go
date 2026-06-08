@@ -2,6 +2,8 @@ package main
 
 import (
 	"testing"
+
+	"btcfind/funded"
 )
 
 func TestBloomNoFalseNegatives(t *testing.T) {
@@ -22,7 +24,7 @@ func TestBloomNoFalseNegatives(t *testing.T) {
 			{0xaa, 0xbb, 0xcc},
 		},
 	}
-	sets.BuildBlooms()
+	sets.BuildBlooms(funded.NopReporter{})
 
 	assertBloomCovers20(t, sets.LegacyBloom, sets.Legacy)
 	assertBloomCovers20(t, sets.P2SHBloom, sets.P2SH)

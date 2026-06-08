@@ -18,7 +18,7 @@ Bitcoin key search tool. Generates random keypairs, derives addresses across for
 
 ### Completed plans
 
-Check `plans/manifest.json` for current status. As of last update: `high-04` (fix worker count) is completed.
+Check `plans/manifest.json` for current status. Single-machine optimizations are complete; distributed `net-*` plans are complete.
 
 ## Benchmark after every change
 
@@ -162,6 +162,37 @@ Examples:
 Simulated hits do not require a real funded match. Inject mode tests lookup against a known index entry; WIF remains from the random key (not the funded address owner).
 
 `funded.tsv` is downloaded automatically on first run if missing (see `funded_download.go`).
+
+## Distributed search (cluster)
+
+Three binaries: standalone `btcfind`, `btcfind-coordinator`, `btcfind-worker`.
+
+```bash
+go build -o btcfind .
+go build -o btcfind-coordinator ./cmd/btcfind-coordinator
+go build -o btcfind-worker ./cmd/btcfind-worker
+
+# Generate TLS certs (LAN/internet)
+./scripts/net-gen-certs.sh ./certs localhost
+
+# Coordinator (owns formats, min-balance, hit log)
+export BTCFIND_AUTH_TOKEN=your-secret
+./btcfind-coordinator --listen :8443 \
+  --tls-cert certs/server.pem --tls-key certs/server-key.pem \
+  --auth-token "$BTCFIND_AUTH_TOKEN" --formats all --min-balance 30000
+
+# Each worker machine (local --threads only)
+./btcfind-worker --coordinator https://coordinator:8443 \
+  --auth-token "$BTCFIND_AUTH_TOKEN" --threads 16
+
+# Press Enter on coordinator TTY to start (or --auto-start for scripts)
+```
+
+Coordinator writes cluster hits to `wallets.txt`. Workers run the full hot loop locally; network is register/heartbeat/cache/stats/hits only.
+
+Optional: `--mtls-ca` / `--mtls-require-client-cert` on coordinator; `--tls-cert`/`--tls-key` on workers; `--proxy-url` for corporate proxies; `--max-workers` and rate limits on public coordinators.
+
+Design: `plans/net/design.md`. Restore pre-cluster code: `git reset --hard v1-standalone`.
 
 ## Code conventions
 

@@ -4,11 +4,12 @@ import (
 	"testing"
 
 	"btcfind/bitcoin"
+	"btcfind/funded"
 )
 
 func BenchmarkHotLoopMatch(b *testing.B) {
 	sets := FundedSets{}
-	sets.ensureBlooms()
+	sets.EnsureBlooms(funded.NopReporter{})
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

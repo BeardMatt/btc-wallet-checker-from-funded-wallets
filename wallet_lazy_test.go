@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"btcfind/bitcoin"
+	"btcfind/funded"
 )
 
 func TestLazyMatchesEagerEmptyIndex(t *testing.T) {
 	sets := FundedSets{}
-	sets.ensureBlooms()
+	sets.EnsureBlooms(funded.NopReporter{})
 	mask := bitcoin.AllFormats()
 
 	for i := 0; i < 2000; i++ {
@@ -54,7 +55,7 @@ func TestLazyMatchesEagerFundedIndex(t *testing.T) {
 
 func TestShouldDeriveTaprootTaprootOnly(t *testing.T) {
 	sets := FundedSets{TaprootV1: make([][32]byte, 1)}
-	sets.ensureBlooms()
+	sets.EnsureBlooms(funded.NopReporter{})
 	mask, err := bitcoin.ParseFormatMask("taproot")
 	if err != nil {
 		t.Fatal(err)

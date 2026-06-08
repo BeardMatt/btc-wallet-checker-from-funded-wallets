@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"btcfind/funded"
 )
 
 func testUI(quiet, verbose bool) (*UI, *bytes.Buffer) {
@@ -18,26 +20,24 @@ func testUI(quiet, verbose bool) (*UI, *bytes.Buffer) {
 }
 
 func TestEnsureFundedUpToDateVerbose(t *testing.T) {
-	if _, err := os.Stat(fundedFile); err != nil {
+	if _, err := os.Stat(funded.DefaultTSVFile); err != nil {
 		t.Skip("funded.tsv not present")
 	}
 
-	orig := fetchRemoteLastModified
-	defer func() { fetchRemoteLastModified = orig }()
-
-	fetchRemoteLastModified = func() (time.Time, error) {
+	funded.SetRemoteLastModifiedHook(func() (time.Time, error) {
 		return time.Now().Add(24 * time.Hour), nil
-	}
+	})
+	defer funded.SetRemoteLastModifiedHook(nil)
 
 	u, stderr := testUI(false, true)
-	info, err := os.Stat(fundedFile)
+	info, err := os.Stat(funded.DefaultTSVFile)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	u.Section("Funded data check")
-	logLocalFundedFile(u, info)
-	u.Infof("  remote URL: %s\n", fundedDownloadURL)
+	funded.LogLocalFundedFile(mainReporter{}, info)
+	u.Infof("  remote URL: %s\n", funded.DownloadURL)
 	u.Infof("  remote      %s\n", time.Now().Add(24*time.Hour).UTC().Format(time.RFC3339))
 	u.Infof("  HEAD request: %dms\n", 12)
 	u.Infof("  Up to date — using local file\n")
@@ -58,14 +58,12 @@ func TestEnsureFundedUpToDateVerbose(t *testing.T) {
 }
 
 func TestEnsureFundedQuietOmitsCheckSection(t *testing.T) {
-	orig := fetchRemoteLastModified
-	defer func() { fetchRemoteLastModified = orig }()
-
-	fetchRemoteLastModified = func() (time.Time, error) {
+	funded.SetRemoteLastModifiedHook(func() (time.Time, error) {
 		return time.Now().Add(24 * time.Hour), nil
-	}
+	})
+	defer funded.SetRemoteLastModifiedHook(nil)
 
-	if _, err := os.Stat(fundedFile); err != nil {
+	if _, err := os.Stat(funded.DefaultTSVFile); err != nil {
 		t.Skip("funded.tsv not present")
 	}
 
@@ -82,16 +80,14 @@ func TestEnsureFundedQuietOmitsCheckSection(t *testing.T) {
 }
 
 func TestEnsureFundedRemoteErrorShowsLocalFallback(t *testing.T) {
-	if _, err := os.Stat(fundedFile); err != nil {
+	if _, err := os.Stat(funded.DefaultTSVFile); err != nil {
 		t.Skip("funded.tsv not present")
 	}
 
-	orig := fetchRemoteLastModified
-	defer func() { fetchRemoteLastModified = orig }()
-
-	fetchRemoteLastModified = func() (time.Time, error) {
+	funded.SetRemoteLastModifiedHook(func() (time.Time, error) {
 		return time.Time{}, os.ErrPermission
-	}
+	})
+	defer funded.SetRemoteLastModifiedHook(nil)
 
 	_, stderr := testUI(false, false)
 	ensureFunded()
@@ -119,8 +115,8 @@ func TestLogLocalFundedFileUsesPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	u, stderr := testUI(false, false)
-	logLocalFundedFile(u, info)
+	_, stderr := testUI(false, false)
+	funded.LogLocalFundedFile(mainReporter{}, info)
 
 	if !strings.Contains(stderr.String(), "3 B") {
 		t.Fatalf("expected size in output: %s", stderr.String())

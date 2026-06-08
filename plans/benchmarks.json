@@ -9,6 +9,21 @@
   },
   "entries": [
     {
+      "date": "2026-06-08",
+      "commit": "pending",
+      "plan_id": "net-high-01",
+      "title": "Distributed search — extract search package + cluster binaries",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 123974.57,
+      "hot_loop_seconds": 0.403309,
+      "wall_seconds": 0.579,
+      "startup_seconds": 0.176,
+      "delta_vs_previous": "+1.2%",
+      "notes": "Refactored hot loop into search/ and funded/ packages; added btcfind-coordinator and btcfind-worker. Standalone throughput within noise."
+    },
+    {
       "date": "2026-06-07",
       "commit": "4de4975",
       "plan_id": "low-14",
