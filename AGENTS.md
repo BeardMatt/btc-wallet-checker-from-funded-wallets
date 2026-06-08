@@ -132,6 +132,8 @@ go build -o btcfind .
 
 Tokens: `legacy`, `legacy-compressed`, `legacy-uncompressed`, `segwit`, `p2sh`, `taproot`, `all`. Omitted formats cannot produce hits (e.g. `--formats taproot` skips ~55% taproot-adjacent work only when other formats omitted — largest win is dropping `taproot` from the set).
 
+Workers derive address hashes in stages and skip taproot EC when all hash160 bloom pre-checks are negative (taproot-only `--formats` always derives taproot). Consumer inject/hit paths unchanged.
+
 ### Output flags (optional)
 
 | Flag | Purpose |

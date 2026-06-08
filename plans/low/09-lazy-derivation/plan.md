@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-09` |
 | **Priority** | **High** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none (synergistic with `low-10`) |
 | **Estimated gain** | **15–35%** hot-loop throughput (taproot EC skipped on most keys) |
 
@@ -85,10 +85,10 @@ Target: measurable drop in taproot CPU samples; keys/sec &gt; baseline without r
 
 ## Verification
 
-- [ ] `./btcfind 50000 8` keys/sec improves vs ~56k baseline
-- [ ] `--simulate-hit` and `--inject-index-hit` still pass
-- [ ] No regression &gt;2% without profile justification
-- [ ] Taproot share of CPU time drops in profile
+- [x] `./btcfind 50000 8` keys/sec improves vs ~56k baseline
+- [x] `--simulate-hit` and `--inject-index-hit` still pass
+- [x] No regression &gt;2% without profile justification
+- [x] Taproot share of CPU time drops in profile
 
 ## Rollback
 

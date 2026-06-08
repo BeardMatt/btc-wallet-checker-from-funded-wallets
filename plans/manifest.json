@@ -178,7 +178,7 @@
       "path": "low/09-lazy-derivation",
       "title": "Lazy per-format derivation (taproot last)",
       "priority": "high",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "15–35% hot-loop — skip taproot EC on most keys (worker-side)"
     },

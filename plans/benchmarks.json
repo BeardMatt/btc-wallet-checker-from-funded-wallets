@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-09",
+      "title": "Lazy per-format derivation (taproot last)",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 107286.78,
+      "hot_loop_seconds": 0.466041,
+      "wall_seconds": 1.947,
+      "startup_seconds": 1.481,
+      "delta_vs_previous": "+85.6%",
+      "notes": "Bloom-gated taproot skip in workers when all hash160 blooms negative; 1k-key parity test vs eager on live index."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "88a4934",
       "plan_id": "low-10",
       "title": "--formats flag to skip address types",

@@ -50,7 +50,7 @@ func main() {
 	appUI.BeginSearch(cfg.numKeys)
 
 	start := time.Now()
-	ch := newWallet(workers, cfg.formats)
+	ch := newWallet(workers, fundedSets, cfg.formats)
 	lastProgress := time.Now()
 
 	processed := 0
@@ -100,13 +100,13 @@ func main() {
 	appUI.PrintSummary(took, cfg.numKeys, avg)
 }
 
-func newWallet(n int, mask bitcoin.FormatMask) chan []bitcoin.Wallet {
+func newWallet(n int, sets FundedSets, mask bitcoin.FormatMask) chan []bitcoin.Wallet {
 	ch := make(chan []bitcoin.Wallet, n)
 	for range n {
 		go func() {
 			batch := make([]bitcoin.Wallet, 0, keyBatchSize)
 			for {
-				batch = append(batch, bitcoin.GenKeypairMasked(mask))
+				batch = append(batch, genWalletStaged(sets, mask))
 				if len(batch) >= keyBatchSize {
 					ch <- batch
 					batch = make([]bitcoin.Wallet, 0, keyBatchSize)
