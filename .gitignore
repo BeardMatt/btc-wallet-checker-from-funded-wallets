@@ -31,6 +31,9 @@ mem.prof
 *.pem
 *.key
 /wallets.txt
+/btcfind.session
+/btcfind.session.tmp
+/funded.*.cache
 
 # --- IDE / editor ---
 .idea/

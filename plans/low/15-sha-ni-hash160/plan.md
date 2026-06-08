@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-15` |
 | **Priority** | **Low** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none (best after `low-09`/`low-10` while hash path is touched) |
 | **Estimated gain** | **2–8%** if SHA-NI available; **0%** fallback on older CPUs |
 
@@ -58,9 +58,9 @@ go test -bench=BenchmarkDeriveLookupKeys ./bitcoin/
 
 ## Verification
 
-- [ ] Output bit-identical to btcd Hash160 on test vectors
-- [ ] Measurable bench improvement on SHA-NI host
-- [ ] No regression when SHA-NI absent
+- [x] Output bit-identical to btcd Hash160 on test vectors
+- [x] Measurable bench improvement on SHA-NI host
+- [x] No regression when SHA-NI absent
 
 ## Rollback
 

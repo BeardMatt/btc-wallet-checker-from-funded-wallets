@@ -16,7 +16,7 @@ func TestPrintHitBanner(t *testing.T) {
 	appUI.out = &bytes.Buffer{}
 
 	wallet := bitcoin.GenKeypair()
-	appUI.PrintHit(wallet, bitcoin.MatchLegacyCompressed, 42, true)
+	appUI.PrintHit(wallet, bitcoin.MatchLegacyCompressed, 42, 0, true)
 
 	out := stderr.String()
 	for _, want := range []string{

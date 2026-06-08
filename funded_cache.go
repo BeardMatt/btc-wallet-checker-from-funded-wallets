@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,12 +12,20 @@ import (
 
 const fundedCacheFile = "funded.cache"
 
+func fundedCachePath(minBalance uint64) string {
+	if minBalance == 0 || minBalance == defaultMinBalanceSats {
+		return fundedCacheFile
+	}
+	return fmt.Sprintf("funded.%d.cache", minBalance)
+}
+
 var fundedCacheMagic = [4]byte{'B', 'F', 'N', 'D'}
 
 const (
-	fundedCacheVersionV1   uint32 = 1
-	fundedCacheVersionV2   uint32 = 2
-	fundedCacheHeaderSize         = 4 + 4 + 8 + 4*4 // magic + version + mtime + 4 counts
+	fundedCacheVersionV1 uint32 = 1
+	fundedCacheVersionV2 uint32 = 2
+	fundedCacheVersionV3 uint32 = 3
+	fundedCacheHeaderSize       = 4 + 4 + 8 + 8 + 4*4 // magic + version + mtime + min_balance + 4 counts
 )
 
 func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
@@ -31,12 +38,17 @@ func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
 	writeErr := func() error {
 		header := make([]byte, fundedCacheHeaderSize)
 		copy(header[0:4], fundedCacheMagic[:])
-		binary.LittleEndian.PutUint32(header[4:8], fundedCacheVersionV2)
+		binary.LittleEndian.PutUint32(header[4:8], fundedCacheVersionV3)
 		binary.LittleEndian.PutUint64(header[8:16], uint64(srcMtime.UnixNano()))
-		binary.LittleEndian.PutUint32(header[16:20], uint32(len(sets.Legacy)))
-		binary.LittleEndian.PutUint32(header[20:24], uint32(len(sets.P2SH)))
-		binary.LittleEndian.PutUint32(header[24:28], uint32(len(sets.SegwitV0)))
-		binary.LittleEndian.PutUint32(header[28:32], uint32(len(sets.TaprootV1)))
+		minBal := sets.MinBalanceSats
+		if minBal == 0 {
+			minBal = defaultMinBalanceSats
+		}
+		binary.LittleEndian.PutUint64(header[16:24], minBal)
+		binary.LittleEndian.PutUint32(header[24:28], uint32(len(sets.Legacy)))
+		binary.LittleEndian.PutUint32(header[28:32], uint32(len(sets.P2SH)))
+		binary.LittleEndian.PutUint32(header[32:36], uint32(len(sets.SegwitV0)))
+		binary.LittleEndian.PutUint32(header[36:40], uint32(len(sets.TaprootV1)))
 
 		if _, err := f.Write(header); err != nil {
 			return err
@@ -51,6 +63,18 @@ func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
 			return err
 		}
 		if err := writeHash32Slice(f, sets.TaprootV1); err != nil {
+			return err
+		}
+		if err := writeBalanceSlice(f, sets.LegacyBalance); err != nil {
+			return err
+		}
+		if err := writeBalanceSlice(f, sets.P2SHBalance); err != nil {
+			return err
+		}
+		if err := writeBalanceSlice(f, sets.SegwitV0Balance); err != nil {
+			return err
+		}
+		if err := writeBalanceSlice(f, sets.TaprootV1Balance); err != nil {
 			return err
 		}
 		if err := writeBloom(f, sets.LegacyBloom); err != nil {
@@ -101,79 +125,24 @@ func writeHash32Slice(w io.Writer, set [][32]byte) error {
 	return err
 }
 
-func readFundedCache(path string, expectedMtime time.Time) (FundedSets, error) {
-	f, err := os.Open(path)
+func writeBalanceSlice(w io.Writer, balances []uint64) error {
+	if len(balances) == 0 {
+		return nil
+	}
+	buf := make([]byte, len(balances)*8)
+	for i, b := range balances {
+		binary.LittleEndian.PutUint64(buf[i*8:(i+1)*8], b)
+	}
+	_, err := w.Write(buf)
+	return err
+}
+
+func readFundedCache(path string, expectedMtime time.Time, minBalance uint64) (FundedSets, error) {
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return FundedSets{}, err
 	}
-	defer f.Close()
-
-	header := make([]byte, fundedCacheHeaderSize)
-	if _, err := io.ReadFull(f, header); err != nil {
-		return FundedSets{}, fmt.Errorf("read cache header: %w", err)
-	}
-
-	if [4]byte(header[0:4]) != fundedCacheMagic {
-		return FundedSets{}, errors.New("invalid cache magic")
-	}
-	version := binary.LittleEndian.Uint32(header[4:8])
-	if version != fundedCacheVersionV1 && version != fundedCacheVersionV2 {
-		return FundedSets{}, errors.New("unsupported cache version")
-	}
-	cacheMtime := time.Unix(0, int64(binary.LittleEndian.Uint64(header[8:16])))
-	if !cacheMtime.Equal(expectedMtime) {
-		return FundedSets{}, errors.New("cache mtime mismatch")
-	}
-
-	legacyCount := int(binary.LittleEndian.Uint32(header[16:20]))
-	p2shCount := int(binary.LittleEndian.Uint32(header[20:24]))
-	segwitCount := int(binary.LittleEndian.Uint32(header[24:28]))
-	taprootCount := int(binary.LittleEndian.Uint32(header[28:32]))
-
-	legacy, err := readHash20Slice(f, legacyCount)
-	if err != nil {
-		return FundedSets{}, err
-	}
-	p2sh, err := readHash20Slice(f, p2shCount)
-	if err != nil {
-		return FundedSets{}, err
-	}
-	segwit, err := readHash20Slice(f, segwitCount)
-	if err != nil {
-		return FundedSets{}, err
-	}
-	taproot, err := readHash32Slice(f, taprootCount)
-	if err != nil {
-		return FundedSets{}, err
-	}
-
-	sets := FundedSets{
-		Legacy:    legacy,
-		P2SH:      p2sh,
-		SegwitV0:  segwit,
-		TaprootV1: taproot,
-	}
-
-	if version == fundedCacheVersionV2 {
-		sets.LegacyBloom, err = readBloom(f)
-		if err != nil {
-			return FundedSets{}, err
-		}
-		sets.P2SHBloom, err = readBloom(f)
-		if err != nil {
-			return FundedSets{}, err
-		}
-		sets.SegwitV0Bloom, err = readBloom(f)
-		if err != nil {
-			return FundedSets{}, err
-		}
-		sets.TaprootV1Bloom, err = readBloom(f)
-		if err != nil {
-			return FundedSets{}, err
-		}
-	}
-
-	return sets, nil
+	return decodeFundedCache(data, expectedMtime, minBalance)
 }
 
 func writeBloom(w io.Writer, bf *bloom.BloomFilter) error {
@@ -238,6 +207,21 @@ func readHash32Slice(r io.Reader, count int) ([][32]byte, error) {
 		copy(set[i][:], buf[i*32:(i+1)*32])
 	}
 	return set, nil
+}
+
+func readBalanceSlice(r io.Reader, count int) ([]uint64, error) {
+	if count == 0 {
+		return nil, nil
+	}
+	buf := make([]byte, count*8)
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return nil, fmt.Errorf("read balance slice: %w", err)
+	}
+	balances := make([]uint64, count)
+	for i := range balances {
+		balances[i] = binary.LittleEndian.Uint64(buf[i*8 : (i+1)*8])
+	}
+	return balances, nil
 }
 
 func removeFundedCache() {

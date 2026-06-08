@@ -216,6 +216,37 @@ func formatBytes(n int64) string {
 	return fmt.Sprintf("%.1f %cB", float64(n)/float64(div), "KMGTPE"[exp])
 }
 
+func (u *UI) BeginForeverSearch() {
+	if u.tty {
+		return
+	}
+	u.PrintfOut("Running forever (Ctrl+C to stop)... ")
+}
+
+func (u *UI) ForeverProgress(processed uint64, elapsed time.Duration, hits uint64) {
+	if !u.tty || u.quiet {
+		return
+	}
+	now := time.Now()
+	if u.progressActive && now.Sub(u.lastProgressUpdate) < 100*time.Millisecond {
+		return
+	}
+	u.lastProgressUpdate = now
+	u.progressActive = true
+	u.indeterminate = false
+
+	kps := float64(processed) / elapsed.Seconds()
+	if elapsed < time.Millisecond {
+		kps = 0
+	}
+	u.PrintfErr(
+		"\rKeys tried: %s (%.1fk/s avg) | Hits: %s   ",
+		u.formatInt(int64(processed)),
+		kps/1000,
+		u.formatInt(int64(hits)),
+	)
+}
+
 func (u *UI) BeginSearch(total int) {
 	if u.tty {
 		return
@@ -260,7 +291,11 @@ func (u *UI) LogFundedLoad(sets FundedSets, elapsed time.Duration, fromCache boo
 	if fromCache {
 		source = "cache hit"
 	}
-	u.Section(fmt.Sprintf("Funded data — %s (%.1fs)", source, elapsed.Seconds()))
+	minBal := sets.MinBalanceSats
+	if minBal == 0 {
+		minBal = defaultMinBalanceSats
+	}
+	u.Section(fmt.Sprintf("Funded data — %s (%.1fs, min %s sats)", source, elapsed.Seconds(), u.formatInt(int64(minBal))))
 	u.PrintfErr(
 		"  legacy %s  p2sh %s  segwit %s  taproot %s  other %s  (%s total)\n",
 		u.formatIntN(len(sets.Legacy)),
@@ -297,7 +332,15 @@ func kindLabels(kind bitcoin.MatchKind) (id, label string) {
 	}
 }
 
-func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex int, simulated bool) {
+func formatBalanceSats(sats uint64) (btc string, satsFormatted string) {
+	btcWhole := sats / 100_000_000
+	btcFrac := sats % 100_000_000
+	btc = fmt.Sprintf("%d.%08d BTC", btcWhole, btcFrac)
+	satsFormatted = ui().formatInt(int64(sats))
+	return btc, satsFormatted
+}
+
+func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex int, balanceSats uint64, simulated bool) {
 	addr := bitcoin.EncodeMatchAddress(kind, wallet.Keys)
 	if addr == "" {
 		panic("failed to encode hit address")
@@ -307,7 +350,7 @@ func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex in
 
 	savedToLog := false
 	if !simulated {
-		if err := appendWalletHit(keyIndex, kind, addr, wif); err != nil {
+		if err := appendWalletHit(keyIndex, kind, addr, wif, balanceSats); err != nil {
 			u.Warnf("could not write %s: %v\n", walletsLogFile, err)
 		} else {
 			savedToLog = true
@@ -339,6 +382,10 @@ func (u *UI) PrintHit(wallet bitcoin.Wallet, kind bitcoin.MatchKind, keyIndex in
 	u.PrintlnErr(border("Address   "+addr))
 	u.PrintlnErr(border(fmt.Sprintf("Format    %s (%s)", id, label)))
 	u.PrintlnErr(border("WIF       "+wif))
+	if balanceSats > 0 {
+		btc, sats := formatBalanceSats(balanceSats)
+		u.PrintlnErr(border(fmt.Sprintf("Balance   %s (%s sats)", btc, sats)))
+	}
 	u.PrintlnErr(border("Key #     "+u.formatIntN(keyIndex)))
 	u.PrintlnErr("╚══════════════════════════════════════════════════════════════╝")
 	if savedToLog {

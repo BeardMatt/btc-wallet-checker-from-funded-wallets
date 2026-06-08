@@ -32,7 +32,10 @@ func TestLazyMatchesEagerFundedIndex(t *testing.T) {
 		t.Skip("funded.tsv not present")
 	}
 
-	sets, err := readFundedCache(fundedCacheFile, tsv.ModTime())
+	sets, err := mmapFundedCache(fundedCacheFile, tsv.ModTime(), defaultMinBalanceSats)
+	if err != nil {
+		sets, err = readFundedCache(fundedCacheFile, tsv.ModTime(), defaultMinBalanceSats)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

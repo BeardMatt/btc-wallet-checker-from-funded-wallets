@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-11` |
 | **Priority** | **Medium** (expected value, not raw keys/sec) |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `low-12` (balance metadata for tiering and hit display) |
 | **Estimated gain** | Smaller/faster index; **higher expected sats per hit** |
 
@@ -69,9 +69,9 @@ Embed `min_balance_sats` in `funded.cache` v3 header; mismatch → rebuild.
 
 ## Verification
 
-- [ ] Default 30k matches current wallet count
-- [ ] `--min-balance 100000000` loads fewer rows, faster startup
-- [ ] Hit banner / `wallets.txt` shows balance (via `low-12`)
+- [x] Default 30k matches current wallet count
+- [x] `--min-balance 100000000` loads fewer rows, faster startup
+- [x] Hit banner / `wallets.txt` shows balance (via `low-12`)
 
 ## Rollback
 

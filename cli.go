@@ -5,13 +5,18 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"btcfind/bitcoin"
 )
 
 type cliConfig struct {
-	numKeys        int
-	threads        int
+	numKeys              int
+	threads              int
+	minBalance           uint64
+	forever              bool
+	checkpointInterval   time.Duration
+	maxKeys              uint64
 	simulateHit    bool
 	simulateHitAt  int
 	verifyLookup   bool
@@ -25,14 +30,50 @@ type cliConfig struct {
 
 func parseCLI(args []string) (cliConfig, error) {
 	cfg := cliConfig{
-		simulateHitAt: 1,
-		formats:       bitcoin.AllFormats(),
+		simulateHitAt:      1,
+		formats:            bitcoin.AllFormats(),
+		minBalance:         defaultMinBalanceSats,
+		checkpointInterval: 60 * time.Second,
 	}
 
 	var positionals []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
 		switch {
+		case arg == "--forever":
+			cfg.forever = true
+		case strings.HasPrefix(arg, "--checkpoint-interval="):
+			d, err := time.ParseDuration(strings.TrimPrefix(arg, "--checkpoint-interval="))
+			if err != nil || d <= 0 {
+				return cfg, fmt.Errorf("invalid --checkpoint-interval value")
+			}
+			cfg.checkpointInterval = d
+		case arg == "--checkpoint-interval":
+			if i+1 >= len(args) {
+				return cfg, fmt.Errorf("--checkpoint-interval requires a value")
+			}
+			i++
+			d, err := time.ParseDuration(args[i])
+			if err != nil || d <= 0 {
+				return cfg, fmt.Errorf("invalid --checkpoint-interval value")
+			}
+			cfg.checkpointInterval = d
+		case strings.HasPrefix(arg, "--max-keys="):
+			v, err := strconv.ParseUint(strings.TrimPrefix(arg, "--max-keys="), 10, 64)
+			if err != nil {
+				return cfg, fmt.Errorf("invalid --max-keys value")
+			}
+			cfg.maxKeys = v
+		case arg == "--max-keys":
+			if i+1 >= len(args) {
+				return cfg, fmt.Errorf("--max-keys requires a value")
+			}
+			i++
+			v, err := strconv.ParseUint(args[i], 10, 64)
+			if err != nil {
+				return cfg, fmt.Errorf("invalid --max-keys value")
+			}
+			cfg.maxKeys = v
 		case arg == "--simulate-hit":
 			cfg.simulateHit = true
 		case arg == "--no-color":
@@ -77,6 +118,22 @@ func parseCLI(args []string) (cliConfig, error) {
 				return cfg, fmt.Errorf("invalid --simulate-hit-at value")
 			}
 			cfg.simulateHitAt = v
+		case strings.HasPrefix(arg, "--min-balance="):
+			v, err := strconv.ParseUint(strings.TrimPrefix(arg, "--min-balance="), 10, 64)
+			if err != nil {
+				return cfg, fmt.Errorf("invalid --min-balance value")
+			}
+			cfg.minBalance = v
+		case arg == "--min-balance":
+			if i+1 >= len(args) {
+				return cfg, fmt.Errorf("--min-balance requires a value")
+			}
+			i++
+			v, err := strconv.ParseUint(args[i], 10, 64)
+			if err != nil {
+				return cfg, fmt.Errorf("invalid --min-balance value")
+			}
+			cfg.minBalance = v
 		case strings.HasPrefix(arg, "--inject-index-hit="):
 			cfg.injectIndexHit = strings.TrimPrefix(arg, "--inject-index-hit=")
 		case arg == "--inject-index-hit":
@@ -92,22 +149,35 @@ func parseCLI(args []string) (cliConfig, error) {
 		}
 	}
 
-	if len(positionals) < 1 {
-		return cfg, fmt.Errorf("missing <number of wallets to try>")
-	}
-
-	numKeys, err := strconv.Atoi(positionals[0])
-	if err != nil {
-		return cfg, fmt.Errorf("invalid number of wallets")
-	}
-	cfg.numKeys = numKeys
-
-	if len(positionals) >= 2 {
-		threads, err := strconv.Atoi(positionals[1])
-		if err != nil {
-			return cfg, fmt.Errorf("invalid threads")
+	if cfg.forever {
+		if len(positionals) >= 1 {
+			threads, err := strconv.Atoi(positionals[0])
+			if err != nil {
+				return cfg, fmt.Errorf("invalid threads")
+			}
+			cfg.threads = threads
 		}
-		cfg.threads = threads
+		if len(positionals) >= 2 {
+			return cfg, fmt.Errorf("too many positional arguments with --forever")
+		}
+	} else {
+		if len(positionals) < 1 {
+			return cfg, fmt.Errorf("missing <number of wallets to try>")
+		}
+
+		numKeys, err := strconv.Atoi(positionals[0])
+		if err != nil {
+			return cfg, fmt.Errorf("invalid number of wallets")
+		}
+		cfg.numKeys = numKeys
+
+		if len(positionals) >= 2 {
+			threads, err := strconv.Atoi(positionals[1])
+			if err != nil {
+				return cfg, fmt.Errorf("invalid threads")
+			}
+			cfg.threads = threads
+		}
 	}
 
 	if cfg.injectIndexHit != "" {
@@ -119,11 +189,13 @@ func parseCLI(args []string) (cliConfig, error) {
 		}
 	}
 
-	if cfg.verifyLookup && cfg.simulateHitAt > cfg.numKeys {
-		return cfg, fmt.Errorf("--simulate-hit-at %d exceeds num_keys %d", cfg.simulateHitAt, cfg.numKeys)
-	}
-	if cfg.simulateHit && cfg.simulateHitAt > cfg.numKeys {
-		return cfg, fmt.Errorf("--simulate-hit-at %d exceeds num_keys %d", cfg.simulateHitAt, cfg.numKeys)
+	if !cfg.forever {
+		if cfg.verifyLookup && cfg.simulateHitAt > cfg.numKeys {
+			return cfg, fmt.Errorf("--simulate-hit-at %d exceeds num_keys %d", cfg.simulateHitAt, cfg.numKeys)
+		}
+		if cfg.simulateHit && cfg.simulateHitAt > cfg.numKeys {
+			return cfg, fmt.Errorf("--simulate-hit-at %d exceeds num_keys %d", cfg.simulateHitAt, cfg.numKeys)
+		}
 	}
 
 	return cfg, nil
@@ -140,6 +212,7 @@ func validateInjectBucket(bucket string) error {
 
 func printUsage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s <number of wallets to try> [threads] [flags]\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "       %s --forever [threads] [flags]\n", os.Args[0])
 	fmt.Fprintln(os.Stderr, "Flags:")
 	fmt.Fprintln(os.Stderr, "  --simulate-hit                 Force hit output on key N (tests WIF/address path)")
 	fmt.Fprintln(os.Stderr, "  --simulate-hit-at N            Key index for simulate/inject (default 1)")
@@ -149,6 +222,10 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  --no-color                       Disable ANSI colors and live progress")
 	fmt.Fprintln(os.Stderr, "  --quiet                          Minimal startup output (hits and warnings only)")
 	fmt.Fprintln(os.Stderr, "  --verbose                        Verbose bloom filter details at load time")
+	fmt.Fprintln(os.Stderr, "  --forever                        Run until interrupted; checkpoints to btcfind.session")
+	fmt.Fprintln(os.Stderr, "  --checkpoint-interval DURATION   Session checkpoint interval (default 60s)")
+	fmt.Fprintln(os.Stderr, "  --max-keys N                     Safety cap on total keys in forever mode")
+	fmt.Fprintln(os.Stderr, "  --min-balance SATS               Minimum funded balance to index (default 30000)")
 	fmt.Fprintln(os.Stderr, "  --formats LIST                   Address types to derive/check (comma-separated)")
 	fmt.Fprintln(os.Stderr, "                                 legacy, legacy-compressed, legacy-uncompressed,")
 	fmt.Fprintln(os.Stderr, "                                 segwit, p2sh, taproot, or all (default: all)")

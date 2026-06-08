@@ -8,7 +8,7 @@ func parseTSVLine(line []byte) (addr []byte, balance int, ok bool) {
 		return nil, 0, false
 	}
 
-	balance, ok = parseIntBytes(line[tab+1:])
+	balance, ok = parseIntBytes(bytes.TrimSpace(line[tab+1:]))
 	if !ok {
 		return nil, 0, false
 	}

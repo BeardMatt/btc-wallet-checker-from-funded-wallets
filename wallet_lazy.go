@@ -6,7 +6,6 @@ import (
 	"github.com/bits-and-blooms/bloom/v3"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcd/btcec/v2/schnorr"
-	"github.com/btcsuite/btcd/btcutil"
 	"github.com/btcsuite/btcd/txscript"
 )
 
@@ -27,7 +26,7 @@ func deriveKeysStaged(pubKey *btcec.PublicKey, sets FundedSets, mask bitcoin.For
 
 	if mask.NeedsCompressedPubkeyHash() {
 		compressed := pubKey.SerializeCompressed()
-		copy(keys.CompressedHash[:], btcutil.Hash160(compressed))
+		copy(keys.CompressedHash[:], bitcoin.Hash160(compressed))
 	}
 
 	if mask.P2SH && mask.NeedsCompressedPubkeyHash() && len(sets.P2SH) > 0 {
@@ -35,11 +34,11 @@ func deriveKeysStaged(pubKey *btcec.PublicKey, sets FundedSets, mask bitcoin.For
 		redeemScript[0] = 0x00
 		redeemScript[1] = 0x14
 		copy(redeemScript[2:], keys.CompressedHash[:])
-		copy(keys.P2SHHash[:], btcutil.Hash160(redeemScript[:]))
+		copy(keys.P2SHHash[:], bitcoin.Hash160(redeemScript[:]))
 	}
 
 	if mask.LegacyUncompressed && len(sets.Legacy) > 0 {
-		copy(keys.UncompressedHash[:], btcutil.Hash160(pubKey.SerializeUncompressed()))
+		copy(keys.UncompressedHash[:], bitcoin.Hash160(pubKey.SerializeUncompressed()))
 	}
 
 	if shouldDeriveTaproot(sets, keys, mask) {

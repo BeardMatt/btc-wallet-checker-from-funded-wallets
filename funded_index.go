@@ -13,12 +13,20 @@ import (
 
 const bloomFalsePositiveRate = 0.0001
 
+const defaultMinBalanceSats = 30000
+
 type FundedSets struct {
 	Legacy    [][20]byte
 	P2SH      [][20]byte
 	SegwitV0  [][20]byte
 	TaprootV1 [][32]byte
 	Other     []string // non-standard entries that fail address decode
+
+	LegacyBalance    []uint64
+	P2SHBalance      []uint64
+	SegwitV0Balance  []uint64
+	TaprootV1Balance []uint64
+	MinBalanceSats   uint64
 
 	LegacyBloom    *bloom.BloomFilter
 	P2SHBloom      *bloom.BloomFilter
@@ -179,6 +187,43 @@ func inFunded32(set [][32]byte, key [32]byte) bool {
 		return bytes.Compare(set[i][:], key[:]) >= 0
 	})
 	return idx < len(set) && set[idx] == key
+}
+
+func balanceAt20(set [][20]byte, balances []uint64, key [20]byte) uint64 {
+	idx := sort.Search(len(set), func(i int) bool {
+		return bytes.Compare(set[i][:], key[:]) >= 0
+	})
+	if idx < len(set) && set[idx] == key && idx < len(balances) {
+		return balances[idx]
+	}
+	return 0
+}
+
+func balanceAt32(set [][32]byte, balances []uint64, key [32]byte) uint64 {
+	idx := sort.Search(len(set), func(i int) bool {
+		return bytes.Compare(set[i][:], key[:]) >= 0
+	})
+	if idx < len(set) && set[idx] == key && idx < len(balances) {
+		return balances[idx]
+	}
+	return 0
+}
+
+func (s FundedSets) balanceForMatch(kind bitcoin.MatchKind, keys bitcoin.LookupKeys) uint64 {
+	switch kind {
+	case bitcoin.MatchLegacyCompressed:
+		return balanceAt20(s.Legacy, s.LegacyBalance, keys.CompressedHash)
+	case bitcoin.MatchLegacyUncompressed:
+		return balanceAt20(s.Legacy, s.LegacyBalance, keys.UncompressedHash)
+	case bitcoin.MatchSegwitV0:
+		return balanceAt20(s.SegwitV0, s.SegwitV0Balance, keys.CompressedHash)
+	case bitcoin.MatchP2SH:
+		return balanceAt20(s.P2SH, s.P2SHBalance, keys.P2SHHash)
+	case bitcoin.MatchTaproot:
+		return balanceAt32(s.TaprootV1, s.TaprootV1Balance, keys.TaprootKey)
+	default:
+		return 0
+	}
 }
 
 func matchFunded(sets FundedSets, keys bitcoin.LookupKeys, mask bitcoin.FormatMask) (bitcoin.MatchKind, bool) {

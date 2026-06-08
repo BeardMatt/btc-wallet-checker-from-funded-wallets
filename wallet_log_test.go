@@ -18,10 +18,10 @@ func TestAppendWalletHit(t *testing.T) {
 	addr := bitcoin.EncodeMatchAddress(bitcoin.MatchLegacyCompressed, wallet.Keys)
 	wif := formatWIF(wallet.PrivKey)
 
-	if err := appendWalletHitAt(path, 1, bitcoin.MatchLegacyCompressed, addr, wif); err != nil {
+	if err := appendWalletHitAt(path, 1, bitcoin.MatchLegacyCompressed, addr, wif, 123456789); err != nil {
 		t.Fatal(err)
 	}
-	if err := appendWalletHitAt(path, 42, bitcoin.MatchLegacyCompressed, addr, wif); err != nil {
+	if err := appendWalletHitAt(path, 42, bitcoin.MatchLegacyCompressed, addr, wif, 50000); err != nil {
 		t.Fatal(err)
 	}
 
@@ -46,6 +46,7 @@ func TestAppendWalletHit(t *testing.T) {
 		"key_index: 42",
 		"format: legacy_compressed (P2PKH compressed)",
 		"address: " + addr,
+		"balance_sats: 123456789",
 		"wif: " + wif,
 	} {
 		if !strings.Contains(content, want) {
@@ -67,7 +68,7 @@ func TestPrintHitSimulatedNoWalletLog(t *testing.T) {
 	appUI.out = &bytes.Buffer{}
 
 	wallet := bitcoin.GenKeypair()
-	appUI.PrintHit(wallet, bitcoin.MatchLegacyCompressed, 1, true)
+	appUI.PrintHit(wallet, bitcoin.MatchLegacyCompressed, 1, 0, true)
 
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatal("simulated hit must not create wallets.txt")
@@ -87,7 +88,7 @@ func TestPrintHitRealWritesWalletLog(t *testing.T) {
 	appUI.out = &bytes.Buffer{}
 
 	wallet := bitcoin.GenKeypair()
-	appUI.PrintHit(wallet, bitcoin.MatchSegwitV0, 7, false)
+	appUI.PrintHit(wallet, bitcoin.MatchSegwitV0, 7, 100000, false)
 
 	data, err := os.ReadFile(path)
 	if err != nil {

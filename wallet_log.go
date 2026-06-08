@@ -12,11 +12,11 @@ const walletsLogFile = "wallets.txt"
 
 var walletsLogPath = walletsLogFile
 
-func appendWalletHit(keyIndex int, kind bitcoin.MatchKind, address, wif string) error {
-	return appendWalletHitAt(walletsLogPath, keyIndex, kind, address, wif)
+func appendWalletHit(keyIndex int, kind bitcoin.MatchKind, address, wif string, balanceSats uint64) error {
+	return appendWalletHitAt(walletsLogPath, keyIndex, kind, address, wif, balanceSats)
 }
 
-func appendWalletHitAt(path string, keyIndex int, kind bitcoin.MatchKind, address, wif string) error {
+func appendWalletHitAt(path string, keyIndex int, kind bitcoin.MatchKind, address, wif string, balanceSats uint64) error {
 	_, statErr := os.Stat(path)
 	newFile := os.IsNotExist(statErr)
 
@@ -34,12 +34,13 @@ func appendWalletHitAt(path string, keyIndex int, kind bitcoin.MatchKind, addres
 
 	id, label := kindLabels(kind)
 	if _, err := fmt.Fprintf(f,
-		"--- wallet found %s ---\nkey_index: %d\nformat: %s (%s)\naddress: %s\nwif: %s\n\n",
+		"--- wallet found %s ---\nkey_index: %d\nformat: %s (%s)\naddress: %s\nbalance_sats: %d\nwif: %s\n\n",
 		time.Now().Format(time.RFC3339),
 		keyIndex,
 		id,
 		label,
 		address,
+		balanceSats,
 		wif,
 	); err != nil {
 		return err

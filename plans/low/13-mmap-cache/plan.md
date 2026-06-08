@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-13` |
 | **Priority** | **Low–Medium** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `high-02`, `low-12` (cache v3 format must be stable) |
 | **Estimated gain** | **Faster startup**, lower RSS spike; marginal hot-loop locality |
 
@@ -53,9 +53,9 @@ Measure `startup_seconds` before/after on cache hit.
 
 ## Verification
 
-- [ ] Cache hit startup &lt; current ~0.8–0.9s (target ~30–50% reduction)
-- [ ] Hot-loop keys/sec unchanged (±1%)
-- [ ] Works on Linux; graceful fallback elsewhere
+- [x] Cache hit startup &lt; current ~0.8–0.9s (target ~30–50% reduction)
+- [x] Hot-loop keys/sec unchanged (±1%)
+- [x] Works on Linux; graceful fallback elsewhere
 
 ## Rollback
 

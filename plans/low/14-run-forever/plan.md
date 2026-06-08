@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-14` |
 | **Priority** | **Low** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | `low-08` (`wallets.txt` persistence pattern) |
 | **Estimated gain** | Ops / UX — long-running production use |
 
@@ -77,10 +77,10 @@ Listen for `SIGINT`/`SIGTERM`; break loop, write checkpoint.
 
 ## Verification
 
-- [ ] `--forever` runs until SIGINT
-- [ ] Checkpoint file updates on interval
-- [ ] `wallets.txt` still appends on hit
-- [ ] `./btcfind 50000 8` unchanged
+- [x] `--forever` runs until SIGINT
+- [x] Checkpoint file updates on interval
+- [x] `wallets.txt` still appends on hit
+- [x] `./btcfind 50000 8` unchanged
 
 ## Rollback
 

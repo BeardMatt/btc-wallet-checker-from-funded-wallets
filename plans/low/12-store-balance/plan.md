@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-12` |
 | **Priority** | **Medium** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | UX / correctness — enables `low-11`, richer hits |
 
@@ -70,9 +70,9 @@ In `parseTSVLine` / `addAddress`, record balance alongside hash (handle duplicat
 
 ## Verification
 
-- [ ] Inject-index-hit shows balance for known funded entry
-- [ ] v2 cache rebuilds to v3 on first run
-- [ ] Benchmark hot loop regression &lt;2% (balance only read on hit)
+- [x] Inject-index-hit shows balance for known funded entry
+- [x] v2 cache rebuilds to v3 on first run
+- [x] Benchmark hot loop regression &lt;2% (balance only read on hit)
 
 ## Rollback
 
