@@ -4,84 +4,33 @@
 |-------|-------|
 | **ID** | `low-03` |
 | **Priority** | Low |
-| **Status** | `maybe` |
+| **Status** | `skipped` |
 | **Depends on** | `high-01`, `high-02` |
-| **Estimated gain** | Linear scale-out; not single-machine optimization |
+| **Estimated gain** | Superseded — see `plans/net/*` |
+| **Superseded by** | `plans/net/` (`net-high-01` … `net-optional-03`) |
 
-## Problem
+## Status
 
-Single-machine throughput caps out at CPU core count and memory bandwidth. Searching larger keyspaces faster requires horizontal scaling.
+This sketch is **superseded** by the network plan tree. Do not implement from this file.
 
-## Goal
+Use instead:
 
-Design a coordinator/worker model that partitions the random key search across multiple machines without duplicate work or missed coverage.
+- **Design:** [`plans/net/design.md`](../../net/design.md)
+- **Index:** [`plans/net/README.md`](../../net/README.md)
+- **Order:** `plans/manifest.json` → `network_recommended_order`
 
-## Scope (this plan only)
+## Approved design decisions (2026-06-08)
 
-- Architecture design and minimal coordinator/worker prototype
-- Shared funded index distribution (cache file sync)
+| Topic | Decision |
+|-------|----------|
+| Network scope | LAN + internet-facing (TLS day one) |
+| Start gate | Enter on coordinator TTY |
+| Binaries | Separate `btcfind-coordinator` + `btcfind-worker` |
+| Thread count | Per-worker `--threads` (not coordinator-controlled) |
+| Keyspace | No partitioning — probabilistic overlap OK |
 
-**Out of scope:** single-machine optimizations.
+## Original problem (historical)
 
-## Implementation steps
+Single-machine throughput caps at CPU core count. Horizontal scaling requires a coordinator/worker model with shared funded index distribution and zero per-key network I/O.
 
-### Step 1 — Define work unit
-
-Options:
-
-| Strategy | Description |
-|----------|-------------|
-| **Counter-based** | Coordinator assigns `[start, end)` key indices; workers seed PRNG deterministically |
-| **Stream-based** | Workers pull batches of N keys from coordinator queue |
-| **Range-based** | Partition private key space (impractical — space is 2^256) |
-
-Recommended: **stream-based batches** with shared random search (collisions acceptable — search is probabilistic).
-
-### Step 2 — Funded index distribution
-
-- Coordinator hosts `funded.cache` (from `high-02`)
-- Workers download cache on startup (HTTP or rsync)
-- Workers run fully local lookups (no network per key)
-
-### Step 3 — Worker binary
-
-```bash
-btcfind-worker --coordinator http://host:8080 --threads 8
-```
-
-Worker loop:
-
-1. Request batch ID from coordinator
-2. Generate + check keys locally
-3. Report hits and throughput stats
-
-### Step 4 — Coordinator API
-
-```
-POST /register        → worker ID
-GET  /stats           → aggregate keys/sec
-POST /hit             → worker reports match (WIF, address)
-GET  /funded.cache    → serve cache file
-```
-
-### Step 5 — Prototype with two local processes
-
-Run coordinator + 2 workers on same machine to validate protocol before real distribution.
-
-## Files to touch
-
-| File | Action |
-|------|--------|
-| `cmd/coordinator/main.go` | New — HTTP coordinator |
-| `cmd/worker/main.go` | New — worker process |
-| `cryptogen.go` | Extract search loop into reusable package |
-
-## Verification
-
-- [ ] 2 local workers achieve ~2× single-worker throughput
-- [ ] Hits reported to coordinator exactly once
-- [ ] Workers survive coordinator restart (re-register)
-
-## Rollback
-
-Delete `cmd/coordinator` and `cmd/worker`. Keep single-binary `btcfind` unchanged.
+See `net-high-01` through `net-high-03` for implementation steps.

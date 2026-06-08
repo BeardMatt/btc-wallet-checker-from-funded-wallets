@@ -20,10 +20,11 @@ plans/
 ├── manifest.json       # plan index (status, deps, order)
 ├── high/               # high-impact plans (4)
 ├── medium/             # medium-impact plans (4)
-└── low/                # low-priority plans (16)
+├── low/                # low-priority plans (16)
+└── net/                # distributed search plans (13) — see network_recommended_order
 ```
 
-Each plan lives at `<tier>/<slug>/plan.md`.
+Each plan lives at `<tier>/<slug>/plan.md`. Network plans use the `net-*` ID prefix and live under `plans/net/`.
 
 ## Recommended rollout order
 
@@ -41,7 +42,7 @@ Work through plans in this order to respect dependencies:
 | 8 | `medium-03` | Batch keys per goroutine |
 | 9 | `low-01` | Hand-rolled encoding |
 | 10 | `low-02` | GPU / assembly secp256k1 |
-| 11 | `low-03` | Distributed search |
+| 11 | `low-03` | Distributed search (skipped — superseded by `net-*`) |
 | 12 | `low-04` | Default thread count to CPU count |
 | 13 | `low-05` | Configurable minimum funded balance |
 | 14 | `low-06` | Simulate-hit flag for testing |
@@ -68,6 +69,28 @@ Work through plans in this order to respect dependencies:
 | `low-11` | Medium | `low-12` | Tiered index needs balance at load and on hit |
 | `low-13` | Low–Medium | `high-02`, `low-12` | mmap after cache format stabilizes |
 | `low-14` | Low | `low-08` | Long-run ops; independent of perf work |
+
+## Network / distributed search (`net-*`)
+
+Horizontal scale-out: `btcfind-coordinator` + N × `btcfind-worker`. Design doc: [`net/design.md`](net/design.md).
+
+Work through `network_recommended_order` in `manifest.json` (one plan at a time, same workflow as above):
+
+| Step | Plan ID | Title |
+|------|---------|-------|
+| 1 | `net-high-01` | Extract shared search package |
+| 2 | `net-high-05` | Funded cache HTTP distribution |
+| 3 | `net-high-04` | TLS + bearer auth |
+| 4 | `net-high-02` | Coordinator core + Enter-to-start |
+| 5 | `net-high-03` | Worker binary (per-machine `--threads`) |
+| 6 | `net-medium-03` | Run config sync |
+| 7 | `net-medium-01` | Cluster stats aggregation |
+| 8 | `net-medium-02` | Hit pipeline |
+| 9 | `net-low-01` | Reconnect + coordinator restart |
+| 10 | `net-low-02` | Coordinator live dashboard |
+| 11 | `net-optional-01` | mTLS (optional) |
+| 12 | `net-optional-02` | NAT / reverse tunnel (optional) |
+| 13 | `net-optional-03` | Abuse limits (optional) |
 
 ## Status workflow
 

@@ -28,6 +28,21 @@
     "low-13",
     "low-14"
   ],
+  "network_recommended_order": [
+    "net-high-01",
+    "net-high-05",
+    "net-high-04",
+    "net-high-02",
+    "net-high-03",
+    "net-medium-03",
+    "net-medium-01",
+    "net-medium-02",
+    "net-low-01",
+    "net-low-02",
+    "net-optional-01",
+    "net-optional-02",
+    "net-optional-03"
+  ],
   "plans": [
     {
       "id": "high-01",
@@ -124,9 +139,9 @@
       "path": "low/03-distributed-search",
       "title": "Distributed search across machines",
       "priority": "low",
-      "status": "maybe",
+      "status": "skipped",
       "depends_on": ["high-01", "high-02"],
-      "estimated_gain": "Linear scale-out; not single-machine optimization"
+      "estimated_gain": "Superseded by plans/net/* — see network_recommended_order"
     },
     {
       "id": "low-04",
@@ -244,6 +259,123 @@
       "status": "completed",
       "depends_on": ["low-07"],
       "estimated_gain": "UX — show update check and up-to-date status every run"
+    },
+    {
+      "id": "net-high-01",
+      "path": "net/high/01-extract-search-package",
+      "title": "Extract shared search package",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "Foundation for coordinator/worker binaries"
+    },
+    {
+      "id": "net-high-05",
+      "path": "net/high/05-cache-http",
+      "title": "Funded cache HTTP distribution",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["net-high-01"],
+      "estimated_gain": "Workers sync funded.cache without manual copy"
+    },
+    {
+      "id": "net-high-04",
+      "path": "net/high/04-tls-auth",
+      "title": "TLS + bearer auth",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["net-high-05"],
+      "estimated_gain": "Internet-facing coordinator security (day one)"
+    },
+    {
+      "id": "net-high-02",
+      "path": "net/high/02-coordinator-core",
+      "title": "Coordinator core + Enter-to-start",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["net-high-04"],
+      "estimated_gain": "Lobby, registration, operator start gate"
+    },
+    {
+      "id": "net-high-03",
+      "path": "net/high/03-worker-binary",
+      "title": "Worker binary (per-machine --threads)",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": ["net-high-02"],
+      "estimated_gain": "Linear scale-out — N workers ≈ N × local keys/s"
+    },
+    {
+      "id": "net-medium-03",
+      "path": "net/medium/03-run-config-sync",
+      "title": "Run config sync (formats, min-balance)",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": ["net-high-03"],
+      "estimated_gain": "Consistent cluster search parameters"
+    },
+    {
+      "id": "net-medium-01",
+      "path": "net/medium/01-stats-aggregation",
+      "title": "Cluster stats aggregation",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": ["net-high-03"],
+      "estimated_gain": "Aggregate keys/sec and keys tried"
+    },
+    {
+      "id": "net-medium-02",
+      "path": "net/medium/02-hit-pipeline",
+      "title": "Hit pipeline + coordinator wallets.txt",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": ["net-high-03"],
+      "estimated_gain": "Canonical hit log on coordinator"
+    },
+    {
+      "id": "net-low-01",
+      "path": "net/low/01-reconnect",
+      "title": "Reconnect + coordinator restart",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["net-medium-01", "net-medium-02"],
+      "estimated_gain": "Worker resilience on network/coordinator failures"
+    },
+    {
+      "id": "net-low-02",
+      "path": "net/low/02-dashboard",
+      "title": "Coordinator live dashboard",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["net-medium-01"],
+      "estimated_gain": "Per-worker TTY dashboard"
+    },
+    {
+      "id": "net-optional-01",
+      "path": "net/optional/01-mtls",
+      "title": "mTLS + cert tooling (optional)",
+      "priority": "optional",
+      "status": "pending",
+      "depends_on": ["net-high-04"],
+      "estimated_gain": "Per-worker client certs for public coordinators"
+    },
+    {
+      "id": "net-optional-02",
+      "path": "net/optional/02-reverse-tunnel",
+      "title": "Reverse tunnel / NAT workers (optional)",
+      "priority": "optional",
+      "status": "pending",
+      "depends_on": ["net-high-03"],
+      "estimated_gain": "Proxy + docs for workers behind strict NAT"
+    },
+    {
+      "id": "net-optional-03",
+      "path": "net/optional/03-abuse-limits",
+      "title": "Public coordinator abuse limits (optional)",
+      "priority": "optional",
+      "status": "pending",
+      "depends_on": ["net-high-04"],
+      "estimated_gain": "Rate limits and worker caps"
     }
   ]
 }
