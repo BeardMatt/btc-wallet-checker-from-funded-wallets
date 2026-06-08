@@ -18,7 +18,14 @@
     "low-05",
     "low-06",
     "low-07",
-    "low-08"
+    "low-08",
+    "low-10",
+    "low-09",
+    "low-15",
+    "low-12",
+    "low-11",
+    "low-13",
+    "low-14"
   ],
   "plans": [
     {
@@ -164,6 +171,69 @@
       "status": "completed",
       "depends_on": ["low-07"],
       "estimated_gain": "Reliability — append-only hit log survives crashes"
+    },
+    {
+      "id": "low-09",
+      "path": "low/09-lazy-derivation",
+      "title": "Lazy per-format derivation (taproot last)",
+      "priority": "high",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "15–35% hot-loop — skip taproot EC on most keys (worker-side)"
+    },
+    {
+      "id": "low-10",
+      "path": "low/10-formats-flag",
+      "title": "--formats flag to skip address types",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "0–50% — omit unused derivations (e.g. taproot-only)"
+    },
+    {
+      "id": "low-11",
+      "path": "low/11-high-value-index",
+      "title": "High-value-only funded index",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": ["low-12"],
+      "estimated_gain": "Smaller index; higher expected sats per hit"
+    },
+    {
+      "id": "low-12",
+      "path": "low/12-store-balance",
+      "title": "Store balance in funded index",
+      "priority": "medium",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "UX — show sats on hit; enables whale tiering"
+    },
+    {
+      "id": "low-13",
+      "path": "low/13-mmap-cache",
+      "title": "mmap funded cache",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["high-02", "low-12"],
+      "estimated_gain": "Faster startup, lower RSS; marginal hot-loop locality"
+    },
+    {
+      "id": "low-14",
+      "path": "low/14-run-forever",
+      "title": "Run-forever mode and session checkpoints",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["low-08"],
+      "estimated_gain": "Ops — continuous search, keys-tried persistence"
+    },
+    {
+      "id": "low-15",
+      "path": "low/15-sha-ni-hash160",
+      "title": "SHA-NI accelerated Hash160",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": [],
+      "estimated_gain": "2–8% on SHA-NI CPUs; 0% fallback elsewhere"
     }
   ]
 }

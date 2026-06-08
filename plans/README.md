@@ -20,7 +20,7 @@ plans/
 ├── manifest.json       # plan index (status, deps, order)
 ├── high/               # high-impact plans (4)
 ├── medium/             # medium-impact plans (4)
-└── low/                # low-priority plans (8)
+└── low/                # low-priority plans (15)
 ```
 
 Each plan lives at `<tier>/<slug>/plan.md`.
@@ -47,6 +47,25 @@ Work through plans in this order to respect dependencies:
 | 14 | `low-06` | Simulate-hit flag for testing |
 | 15 | `low-07` | Output UX — pretty terminal, progress, wallet recovery |
 | 16 | `low-08` | Persist discovered wallets to wallets.txt |
+| 17 | `low-10` | `--formats` flag to skip address types |
+| 18 | `low-09` | Lazy per-format derivation (taproot last) |
+| 19 | `low-15` | SHA-NI accelerated Hash160 |
+| 20 | `low-12` | Store balance in funded index |
+| 21 | `low-11` | High-value-only funded index |
+| 22 | `low-13` | mmap funded cache |
+| 23 | `low-14` | Run-forever mode and session checkpoints |
+
+### New plans (low-09–low-15) — priority and dependencies
+
+| Plan | Priority | Depends on | Why this order |
+|------|----------|------------|----------------|
+| `low-10` | Medium | — | Simple flag; quick win before deeper derivation refactor |
+| `low-09` | **High** | — | Largest single-machine perf lever; synergizes with `low-10` |
+| `low-15` | Low | — | Small hash win; best done while derivation code is in flux |
+| `low-12` | Medium | — | Cache v3 + balance on hit; foundation for whale tier |
+| `low-11` | Medium | `low-12` | Tiered index needs balance at load and on hit |
+| `low-13` | Low–Medium | `high-02`, `low-12` | mmap after cache format stabilizes |
+| `low-14` | Low | `low-08` | Long-run ops; independent of perf work |
 
 ## Status workflow
 
