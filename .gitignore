@@ -11,9 +11,10 @@
 
 # --- Runtime / downloaded data ---
 /funded.tsv
-/funded.tsv.tmp
 /funded.cache
 /funded.cache.bin
+/funded*.tmp
+/funded.*.cache
 *.tsv.gz
 
 # --- Go tooling ---
@@ -33,7 +34,6 @@ mem.prof
 /wallets.txt
 /btcfind.session
 /btcfind.session.tmp
-/funded.*.cache
 
 # --- IDE / editor ---
 .idea/
