@@ -22,7 +22,7 @@ type UI struct {
 }
 
 func NewUI(quiet, noColor bool) *UI {
-	tty := term.IsTerminal(int(os.Stderr.Fd()))
+	tty := term.IsTerminal(int(os.Stderr.Fd())) || term.IsTerminal(int(os.Stdout.Fd()))
 	return &UI{
 		color: tty && !noColor,
 		quiet: quiet,
@@ -47,6 +47,20 @@ func (u *UI) Section(title string) {
 		return
 	}
 	fmt.Fprintf(u.err, "▸ %s\n", title)
+}
+
+// Eventf prints important cluster events even in --quiet mode.
+func (u *UI) Eventf(format string, args ...any) {
+	fmt.Fprintf(u.err, format, args...)
+}
+
+func (u *UI) LogWorkerConnected(hostname string, threads, totalWorkers, totalThreads int) {
+	u.Eventf("▸ Worker connected: %s (%d threads) — %d worker(s), %d threads total\n",
+		hostname, threads, totalWorkers, totalThreads)
+}
+
+func (u *UI) LogListening(addr string) {
+	u.Eventf("▸ Coordinator listening on %s — waiting for workers\n", addr)
 }
 
 // UIReporter adapts UI to funded.Reporter.
@@ -100,15 +114,38 @@ func truncate(s string, max int) string {
 }
 
 func (u *UI) renderDashboard(state string, workers []workerEntry, total uint64, kps float64, hits uint64) {
-	if u.quiet || !u.tty {
+	if u.quiet {
+		u.renderDashboardPlain(state, workers, total, kps, hits)
+		return
+	}
+	if !u.tty {
+		u.renderDashboardPlain(state, workers, total, kps, hits)
 		return
 	}
 	var b strings.Builder
 	b.WriteString("\033[2J\033[H")
 	b.WriteString("btcfind cluster coordinator\n")
 	b.WriteString(strings.Repeat("─", 40) + "\n")
-	b.WriteString(fmt.Sprintf("State: %s | %.0f keys/s | %d keys | Hits: %d | Workers: %d\n\n",
-		state, kps, total, hits, len(workers)))
+	u.writeDashboardBody(&b, state, workers, total, kps, hits)
+	fmt.Fprint(u.err, b.String())
+}
+
+func (u *UI) renderDashboardPlain(state string, workers []workerEntry, total uint64, kps float64, hits uint64) {
+	var b strings.Builder
+	u.writeDashboardBody(&b, state, workers, total, kps, hits)
+	fmt.Fprint(u.err, b.String())
+}
+
+func (u *UI) writeDashboardBody(b *strings.Builder, state string, workers []workerEntry, total uint64, kps float64, hits uint64) {
+	threads := 0
+	for _, w := range workers {
+		threads += w.Threads
+	}
+	b.WriteString(fmt.Sprintf("State: %s | %.0f keys/s | %d keys | Hits: %d | Workers: %d (%d threads)\n\n",
+		state, kps, total, hits, len(workers), threads))
+	if len(workers) == 0 {
+		b.WriteString("  (no workers connected yet)\n")
+	}
 	for _, w := range workers {
 		b.WriteString(fmt.Sprintf("  %-16s %3dt  %-8s  %.0f keys/s  %d run keys\n",
 			w.Hostname, w.Threads, w.State, w.KeysPerSec, w.RunKeys))
@@ -118,5 +155,4 @@ func (u *UI) renderDashboard(state string, workers []workerEntry, total uint64, 
 	} else {
 		b.WriteString("\nCtrl+C to stop\n")
 	}
-	fmt.Fprint(u.err, b.String())
 }

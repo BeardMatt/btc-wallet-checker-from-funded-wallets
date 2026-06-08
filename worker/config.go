@@ -20,4 +20,5 @@ type Config struct {
 	SimulateHit   bool
 	SimulateHitAt int
 	Quiet         bool
+	Verbose       bool
 }

@@ -2,6 +2,7 @@
 /btcfind
 /btcfind-coordinator
 /btcfind-worker
+/btcfind-worker-share/
 /bin/
 /dist/
 *.exe
@@ -33,6 +34,7 @@ mem.prof
 .env.*
 *.pem
 *.key
+/certs/
 /wallets.txt
 /btcfind.session
 /btcfind.session.tmp

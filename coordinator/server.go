@@ -59,6 +59,8 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 	httpSrv.TLSConfig = tlsCfg
 
+	ui.LogListening(cfg.Listen)
+
 	go func() {
 		var err error
 		if cfg.Insecure {
@@ -71,6 +73,9 @@ func Run(ctx context.Context, cfg Config) error {
 			ui.Warnf("server error: %v\n", err)
 		}
 	}()
+
+	// Brief pause so the listener is accepting before workers connect.
+	time.Sleep(200 * time.Millisecond)
 
 	go func() {
 		t := time.NewTicker(10 * time.Second)
@@ -118,48 +123,52 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 func waitEnterOrWorkers(srv *Server, ui *UI) {
-	ui.Infof("Workers may connect. Press Enter to start search…\n")
+	ui.Eventf("Press Enter to start search once workers have connected.\n")
 	enterCh := make(chan struct{})
 	go func() {
 		reader := bufio.NewReader(os.Stdin)
 		_, _ = reader.ReadString('\n')
 		close(enterCh)
 	}()
-	t := time.NewTicker(2 * time.Second)
-	defer t.Stop()
 	for {
-		workers := srv.workerSnapshot()
-		if len(workers) > 0 {
-			threads := 0
-			for _, w := range workers {
-				threads += w.Threads
-			}
-			ui.Infof("Workers connected: %d (%d threads total)\n", len(workers), threads)
-			for _, w := range workers {
-				ui.Infof("  %s  %dt\n", w.Hostname, w.Threads)
-			}
-		}
 		select {
 		case <-enterCh:
+			workers := srv.workerSnapshot()
+			if len(workers) == 0 {
+				ui.Eventf("Warning: starting with 0 workers connected.\n")
+			}
 			srv.startRun()
-			ui.Infof("Search started.\n")
+			ui.Eventf("Search started (%d worker(s)).\n", len(workers))
 			return
-		case <-t.C:
+		default:
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
 func (s *Server) dashboardLoop(ctx context.Context) {
 	t := time.NewTicker(time.Second)
 	defer t.Stop()
+	var lastPlainLobby time.Time
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-t.C:
 			state, total, kps, hits, _ := s.clusterSnapshot()
+			workers := s.workerSnapshot()
 			if state == cluster.StateRunning || state == cluster.StateLobby {
-				s.ui.renderDashboard(state, s.workerSnapshot(), total, kps, hits)
+				s.ui.renderDashboard(state, workers, total, kps, hits)
+			}
+			// Non-TTY fallback: periodic one-line lobby status.
+			if state == cluster.StateLobby && !s.ui.tty && time.Since(lastPlainLobby) >= 5*time.Second {
+				threads := 0
+				for _, w := range workers {
+					threads += w.Threads
+				}
+				s.ui.Eventf("[lobby] %d worker(s) connected, %d threads — press Enter to start\n",
+					len(workers), threads)
+				lastPlainLobby = time.Now()
 			}
 		}
 	}

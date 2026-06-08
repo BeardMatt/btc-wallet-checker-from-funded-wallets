@@ -23,7 +23,10 @@ const workerVersion = "1"
 // Run connects to coordinator, syncs cache, and searches when told to start.
 func Run(ctx context.Context, cfg Config) error {
 	if cfg.AuthToken == "" {
-		return fmt.Errorf("auth token required")
+		cfg.AuthToken = os.Getenv("BTCFIND_AUTH_TOKEN")
+	}
+	if cfg.AuthToken == "" {
+		return fmt.Errorf("auth token required (--auth-token or BTCFIND_AUTH_TOKEN)")
 	}
 	if cfg.StatsInterval == 0 {
 		cfg.StatsInterval = 2 * time.Second
@@ -60,6 +63,8 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 func runSession(ctx context.Context, cfg Config, client *Client, hostname string, threads int) error {
+	cfg.eventf("worker: connecting to %s as %s (%d threads)…\n", cfg.CoordinatorURL, hostname, threads)
+
 	reg, err := client.Register(ctx, hostname, threads, workerVersion)
 	if err != nil {
 		return err
@@ -68,6 +73,7 @@ func runSession(ctx context.Context, cfg Config, client *Client, hostname string
 	if workerID == "" {
 		return fmt.Errorf("registration rejected (cluster full?)")
 	}
+	cfg.eventf("worker: registered id=%s state=%s\n", workerID, reg.RunState)
 
 	minBal := reg.Config.MinBalanceSats
 	if minBal == 0 {
@@ -76,6 +82,7 @@ func runSession(ctx context.Context, cfg Config, client *Client, hostname string
 	cachePath := funded.CachePath(minBal)
 
 	localETag, _ := funded.CacheETag(cachePath)
+	cfg.logf("worker: syncing cache %s…\n", cachePath)
 	remoteETag, err := client.DownloadCache(ctx, cachePath, localETag)
 	if err != nil {
 		return fmt.Errorf("cache sync: %w", err)
@@ -89,6 +96,7 @@ func runSession(ctx context.Context, cfg Config, client *Client, hostname string
 
 	go heartbeatLoop(ctx, client, workerID)
 
+	lobbyAnnounced := false
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -101,8 +109,13 @@ func runSession(ctx context.Context, cfg Config, client *Client, hostname string
 		switch status.State {
 		case cluster.StateLobby:
 			_ = client.Heartbeat(ctx, workerID, "waiting")
+			if !lobbyAnnounced {
+				cfg.eventf("worker: connected — waiting for coordinator to press Enter to start\n")
+				lobbyAnnounced = true
+			}
 			time.Sleep(time.Second)
 		case cluster.StateRunning:
+			cfg.eventf("worker: search started\n")
 			if status.Config.CacheETag != "" && status.Config.CacheETag != remoteETag {
 				remoteETag, err = client.DownloadCache(ctx, cachePath, remoteETag)
 				if err != nil {

@@ -27,6 +27,7 @@ func main() {
 		simHit     = flag.Bool("simulate-hit", false, "force simulated hit")
 		simHitAt   = flag.Int("simulate-hit-at", 1, "key index for simulate hit")
 		quiet      = flag.Bool("quiet", false, "minimal stderr output")
+		verbose    = flag.Bool("verbose", false, "log connection and lobby status")
 	)
 	flag.Parse()
 
@@ -41,9 +42,18 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer cancel()
 
+	token := *authToken
+	if token == "" {
+		token = os.Getenv("BTCFIND_AUTH_TOKEN")
+	}
+	if token == "" {
+		fmt.Fprintln(os.Stderr, "error: auth token required (--auth-token or BTCFIND_AUTH_TOKEN)")
+		os.Exit(1)
+	}
+
 	cfg := worker.Config{
 		CoordinatorURL: *coordURL,
-		AuthToken:      *authToken,
+		AuthToken:      token,
 		Threads:        *threads,
 		TLSSkipVerify:  *tlsSkip,
 		TLSCA:          *tlsCA,
@@ -55,6 +65,7 @@ func main() {
 		SimulateHit:    *simHit,
 		SimulateHitAt:  *simHitAt,
 		Quiet:          *quiet,
+		Verbose:        *verbose,
 	}
 
 	if err := worker.Run(ctx, cfg); err != nil && err != context.Canceled {

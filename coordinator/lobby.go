@@ -83,6 +83,13 @@ func (s *Server) register(req cluster.RegisterRequest) cluster.RegisterResponse 
 		State:    workerWaiting,
 		LastSeen: time.Now(),
 	}
+	totalWorkers := len(s.workers)
+	totalThreads := 0
+	for _, w := range s.workers {
+		totalThreads += w.Threads
+	}
+	s.ui.LogWorkerConnected(req.Hostname, req.Threads, totalWorkers, totalThreads)
+
 	return cluster.RegisterResponse{
 		WorkerID: id,
 		RunState: s.runState,

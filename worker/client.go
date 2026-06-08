@@ -18,10 +18,14 @@ import (
 )
 
 type Client struct {
-	base    string
-	token   string
-	http    *http.Client
-	backoff time.Duration
+	base        string
+	token       string
+	http        *http.Client
+	cacheHTTP   *http.Client
+	backoff     time.Duration
+	verbose     bool
+	logf        func(string, ...any)
+	eventf      func(string, ...any)
 }
 
 func NewClient(cfg Config) (*Client, error) {
@@ -66,14 +70,22 @@ func NewClient(cfg Config) (*Client, error) {
 	}
 
 	base := strings.TrimRight(cfg.CoordinatorURL, "/")
+	apiTimeout := cfg.DialTimeout + 60*time.Second
 	return &Client{
 		base:  base,
 		token: cfg.AuthToken,
 		http: &http.Client{
-			Timeout:   cfg.DialTimeout + 60*time.Second,
+			Timeout:   apiTimeout,
+			Transport: transport,
+		},
+		cacheHTTP: &http.Client{
+			Timeout:   45 * time.Minute,
 			Transport: transport,
 		},
 		backoff: time.Second,
+		verbose: cfg.Verbose,
+		logf:    cfg.logf,
+		eventf:  cfg.eventf,
 	}, nil
 }
 
@@ -86,6 +98,9 @@ func (c *Client) doJSON(ctx context.Context, method, path string, reqBody any, r
 		}
 		if ctx.Err() != nil {
 			return 0, ctx.Err()
+		}
+		if c.eventf != nil {
+			c.eventf("worker: request failed (%v), retry in %s…\n", err, c.backoff)
 		}
 		select {
 		case <-ctx.Done():
@@ -183,6 +198,9 @@ func (c *Client) DownloadCache(ctx context.Context, destPath, etag string) (stri
 		if ctx.Err() != nil {
 			return "", ctx.Err()
 		}
+		if c.eventf != nil {
+			c.eventf("worker: cache sync failed (%v), retry in %s…\n", err, c.backoff)
+		}
 		select {
 		case <-ctx.Done():
 			return "", ctx.Err()
@@ -205,12 +223,15 @@ func (c *Client) tryDownloadCache(ctx context.Context, destPath, etag string) (s
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}
-	resp, err := c.http.Do(req)
+	resp, err := c.cacheHTTP.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusNotModified {
+		if c.logf != nil {
+			c.logf("worker: cache up to date (ETag %s)\n", etag)
+		}
 		return etag, nil
 	}
 	if resp.StatusCode != http.StatusOK {
@@ -218,12 +239,24 @@ func (c *Client) tryDownloadCache(ctx context.Context, destPath, etag string) (s
 		return "", fmt.Errorf("cache download http %d", resp.StatusCode)
 	}
 	newETag := resp.Header.Get("ETag")
+	contentLen := resp.ContentLength
+	if c.eventf != nil {
+		if contentLen > 0 {
+			c.eventf("worker: downloading funded cache (~%.1f MB)…\n", float64(contentLen)/(1024*1024))
+		} else {
+			c.eventf("worker: downloading funded cache…\n")
+		}
+	}
 	tmp := destPath + ".tmp"
 	f, err := os.Create(tmp)
 	if err != nil {
 		return "", err
 	}
-	_, err = io.Copy(f, resp.Body)
+	var writer io.Writer = f
+	if c.logf != nil && contentLen > 0 {
+		writer = &progressWriter{w: f, total: contentLen, logf: c.logf, lastLog: time.Now()}
+	}
+	_, err = io.Copy(writer, resp.Body)
 	closeErr := f.Close()
 	if err != nil {
 		os.Remove(tmp)
@@ -236,5 +269,29 @@ func (c *Client) tryDownloadCache(ctx context.Context, destPath, etag string) (s
 	if err := os.Rename(tmp, destPath); err != nil {
 		return "", err
 	}
+	if c.eventf != nil {
+		c.eventf("worker: cache saved to %s\n", destPath)
+	}
 	return newETag, nil
+}
+
+type progressWriter struct {
+	w       io.Writer
+	total   int64
+	written int64
+	logf    func(string, ...any)
+	lastLog time.Time
+}
+
+func (p *progressWriter) Write(b []byte) (int, error) {
+	n, err := p.w.Write(b)
+	p.written += int64(n)
+	now := time.Now()
+	if p.total > 0 && now.Sub(p.lastLog) >= 2*time.Second {
+		pct := float64(p.written) / float64(p.total) * 100
+		p.logf("worker: cache download %3.0f%% (%0.1f / %0.1f MB)\n",
+			pct, float64(p.written)/(1024*1024), float64(p.total)/(1024*1024))
+		p.lastLog = now
+	}
+	return n, err
 }

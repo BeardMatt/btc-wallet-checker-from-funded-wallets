@@ -4,8 +4,14 @@ set -euo pipefail
 
 OUT="${1:-./certs}"
 SAN="${2:-localhost}"
+EXTRA_IP="${3:-}"
 
 mkdir -p "$OUT"
+
+SAN_EXT="subjectAltName=DNS:${SAN},DNS:localhost,IP:127.0.0.1"
+if [[ -n "$EXTRA_IP" ]]; then
+  SAN_EXT="${SAN_EXT},IP:${EXTRA_IP}"
+fi
 
 openssl genrsa -out "$OUT/ca-key.pem" 4096 2>/dev/null
 openssl req -x509 -new -nodes -key "$OUT/ca-key.pem" -sha256 -days 3650 \
@@ -16,7 +22,7 @@ openssl req -new -key "$OUT/server-key.pem" -out "$OUT/server.csr" \
   -subj "/CN=btcfind-coordinator"
 openssl x509 -req -in "$OUT/server.csr" -CA "$OUT/ca.pem" -CAkey "$OUT/ca-key.pem" \
   -CAcreateserial -out "$OUT/server.pem" -days 825 -sha256 \
-  -extfile <(printf "subjectAltName=DNS:%s,IP:127.0.0.1" "$SAN")
+  -extfile <(printf "%s" "$SAN_EXT")
 
 openssl genrsa -out "$OUT/worker-key.pem" 4096 2>/dev/null
 openssl req -new -key "$OUT/worker-key.pem" -out "$OUT/worker.csr" \
