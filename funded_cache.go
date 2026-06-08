@@ -22,10 +22,8 @@ func fundedCachePath(minBalance uint64) string {
 var fundedCacheMagic = [4]byte{'B', 'F', 'N', 'D'}
 
 const (
-	fundedCacheVersionV1 uint32 = 1
-	fundedCacheVersionV2 uint32 = 2
-	fundedCacheVersionV3 uint32 = 3
-	fundedCacheHeaderSize       = 4 + 4 + 8 + 8 + 4*4 // magic + version + mtime + min_balance + 4 counts
+	fundedCacheVersionV3   uint32 = 3
+	fundedCacheHeaderSize        = 4 + 4 + 8 + 8 + 4*4 // magic + version + mtime + min_balance + 4 counts
 )
 
 func writeFundedCache(path string, sets FundedSets, srcMtime time.Time) error {
@@ -158,70 +156,6 @@ func writeBloom(w io.Writer, bf *bloom.BloomFilter) error {
 	}
 	_, err = w.Write(data)
 	return err
-}
-
-func readBloom(r io.Reader) (*bloom.BloomFilter, error) {
-	var n uint32
-	if err := binary.Read(r, binary.LittleEndian, &n); err != nil {
-		return nil, fmt.Errorf("read bloom length: %w", err)
-	}
-	if n == 0 {
-		return nil, nil
-	}
-	data := make([]byte, n)
-	if _, err := io.ReadFull(r, data); err != nil {
-		return nil, fmt.Errorf("read bloom data: %w", err)
-	}
-	bf := &bloom.BloomFilter{}
-	if err := bf.UnmarshalBinary(data); err != nil {
-		return nil, fmt.Errorf("decode bloom: %w", err)
-	}
-	return bf, nil
-}
-
-func readHash20Slice(r io.Reader, count int) ([][20]byte, error) {
-	if count == 0 {
-		return nil, nil
-	}
-	buf := make([]byte, count*20)
-	if _, err := io.ReadFull(r, buf); err != nil {
-		return nil, fmt.Errorf("read hash20 slice: %w", err)
-	}
-	set := make([][20]byte, count)
-	for i := range set {
-		copy(set[i][:], buf[i*20:(i+1)*20])
-	}
-	return set, nil
-}
-
-func readHash32Slice(r io.Reader, count int) ([][32]byte, error) {
-	if count == 0 {
-		return nil, nil
-	}
-	buf := make([]byte, count*32)
-	if _, err := io.ReadFull(r, buf); err != nil {
-		return nil, fmt.Errorf("read hash32 slice: %w", err)
-	}
-	set := make([][32]byte, count)
-	for i := range set {
-		copy(set[i][:], buf[i*32:(i+1)*32])
-	}
-	return set, nil
-}
-
-func readBalanceSlice(r io.Reader, count int) ([]uint64, error) {
-	if count == 0 {
-		return nil, nil
-	}
-	buf := make([]byte, count*8)
-	if _, err := io.ReadFull(r, buf); err != nil {
-		return nil, fmt.Errorf("read balance slice: %w", err)
-	}
-	balances := make([]uint64, count)
-	for i := range balances {
-		balances[i] = binary.LittleEndian.Uint64(buf[i*8 : (i+1)*8])
-	}
-	return balances, nil
 }
 
 func removeFundedCache() {

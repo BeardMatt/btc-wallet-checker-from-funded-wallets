@@ -13,9 +13,3 @@ func Hash160(data []byte) []byte {
 	copy(out, r.Sum(nil))
 	return out
 }
-
-func Hash160To20(data []byte) [20]byte {
-	var out [20]byte
-	copy(out[:], Hash160(data))
-	return out
-}

@@ -38,24 +38,6 @@ func (s FundedSets) Total() int {
 	return len(s.Legacy) + len(s.P2SH) + len(s.SegwitV0) + len(s.TaprootV1) + len(s.Other)
 }
 
-func appendHash20(slice [][20]byte, hash []byte) [][20]byte {
-	if len(hash) != 20 {
-		return slice
-	}
-	var fixed [20]byte
-	copy(fixed[:], hash)
-	return append(slice, fixed)
-}
-
-func appendHash32(slice [][32]byte, hash []byte) [][32]byte {
-	if len(hash) != 32 {
-		return slice
-	}
-	var fixed [32]byte
-	copy(fixed[:], hash)
-	return append(slice, fixed)
-}
-
 func (s *FundedSets) Sort() {
 	sort.Slice(s.Legacy, func(i, j int) bool {
 		return bytes.Compare(s.Legacy[i][:], s.Legacy[j][:]) < 0
@@ -243,23 +225,4 @@ func matchFunded(sets FundedSets, keys bitcoin.LookupKeys, mask bitcoin.FormatMa
 		return bitcoin.MatchTaproot, true
 	}
 	return 0, false
-}
-
-func (s *FundedSets) addAddress(addr string) {
-	kind, hash, err := bitcoin.DecodeFundedAddressForLoad(addr)
-	if err != nil {
-		s.Other = append(s.Other, addr)
-		return
-	}
-
-	switch kind {
-	case bitcoin.KindLegacy:
-		s.Legacy = appendHash20(s.Legacy, hash)
-	case bitcoin.KindP2SH:
-		s.P2SH = appendHash20(s.P2SH, hash)
-	case bitcoin.KindSegwitV0:
-		s.SegwitV0 = appendHash20(s.SegwitV0, hash)
-	case bitcoin.KindTaprootV1:
-		s.TaprootV1 = appendHash32(s.TaprootV1, hash)
-	}
 }

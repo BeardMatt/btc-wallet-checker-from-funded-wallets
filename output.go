@@ -119,10 +119,6 @@ func (u *UI) Printf(format string, args ...any) {
 	u.PrintfErr(format, args...)
 }
 
-func (u *UI) Println(s string) {
-	u.PrintlnErr(s)
-}
-
 func (u *UI) formatInt(n int64) string {
 	return u.printer.Sprintf("%d", n)
 }
