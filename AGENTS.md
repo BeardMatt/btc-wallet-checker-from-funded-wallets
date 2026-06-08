@@ -124,6 +124,14 @@ go build -o btcfind .
 | `--simulate-hit-verify-lookup` | Log per-bucket lookup results for key N |
 | `--inject-index-hit BUCKET` | Replace wallet hash with `index[0]` from bucket (`legacy`, `legacy-uncompressed`, `p2sh`, `segwit`, `taproot`) |
 
+### Search scope flags (optional)
+
+| Flag | Purpose |
+|------|---------|
+| `--formats LIST` | Comma-separated address types to derive and check (default: all) |
+
+Tokens: `legacy`, `legacy-compressed`, `legacy-uncompressed`, `segwit`, `p2sh`, `taproot`, `all`. Omitted formats cannot produce hits (e.g. `--formats taproot` skips ~55% taproot-adjacent work only when other formats omitted — largest win is dropping `taproot` from the set).
+
 ### Output flags (optional)
 
 | Flag | Purpose |

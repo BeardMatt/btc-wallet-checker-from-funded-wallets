@@ -39,6 +39,9 @@ func main() {
 	if cfg.injectIndexHit != "" {
 		appUI.Infof("  Inject index hit: bucket=%q key=%d\n", cfg.injectIndexHit, cfg.simulateHitAt)
 	}
+	if cfg.formatsSet {
+		appUI.Infof("  Formats: %s\n", cfg.formats.String())
+	}
 
 	ensureFunded()
 	fundedSets := loadFunded()
@@ -47,7 +50,7 @@ func main() {
 	appUI.BeginSearch(cfg.numKeys)
 
 	start := time.Now()
-	ch := newWallet(workers)
+	ch := newWallet(workers, cfg.formats)
 	lastProgress := time.Now()
 
 	processed := 0
@@ -68,7 +71,7 @@ func main() {
 				appUI.Infof("  inject-index-hit: bucket=%s funded_address=%s\n", cfg.injectIndexHit, fundedAddr)
 			}
 
-			kind, ok := matchFunded(fundedSets, keys)
+			kind, ok := matchFunded(fundedSets, keys, cfg.formats)
 			if ok {
 				wallet.Keys = keys
 				appUI.PrintHit(wallet, kind, keyIndex, false)
@@ -97,13 +100,13 @@ func main() {
 	appUI.PrintSummary(took, cfg.numKeys, avg)
 }
 
-func newWallet(n int) chan []bitcoin.Wallet {
+func newWallet(n int, mask bitcoin.FormatMask) chan []bitcoin.Wallet {
 	ch := make(chan []bitcoin.Wallet, n)
 	for range n {
 		go func() {
 			batch := make([]bitcoin.Wallet, 0, keyBatchSize)
 			for {
-				batch = append(batch, bitcoin.GenKeypair())
+				batch = append(batch, bitcoin.GenKeypairMasked(mask))
 				if len(batch) >= keyBatchSize {
 					ch <- batch
 					batch = make([]bitcoin.Wallet, 0, keyBatchSize)

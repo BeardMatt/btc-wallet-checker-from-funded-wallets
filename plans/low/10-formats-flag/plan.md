@@ -4,7 +4,7 @@
 |-------|-------|
 | **ID** | `low-10` |
 | **Priority** | **Medium** |
-| **Status** | `pending` |
+| **Status** | `completed` |
 | **Depends on** | none |
 | **Estimated gain** | **0–50%** depending on formats omitted (skip taproot ≈ largest win) |
 
@@ -72,9 +72,9 @@ type formatMask struct {
 
 ## Verification
 
-- [ ] Default (no flag) matches current benchmark
-- [ ] `--formats taproot` reduces CPU time for taproot in profile
-- [ ] `--formats legacy` still finds inject-index-hit legacy
+- [x] Default (no flag) matches current benchmark
+- [x] `--formats taproot` reduces CPU time for taproot in profile
+- [x] `--formats legacy` still finds inject-index-hit legacy
 
 ## Rollback
 

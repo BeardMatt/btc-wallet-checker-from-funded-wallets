@@ -13,6 +13,6 @@ func BenchmarkHotLoopMatch(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		wallet := bitcoin.GenKeypair()
-		matchFunded(sets, wallet.Keys)
+		matchFunded(sets, wallet.Keys, bitcoin.AllFormats())
 	}
 }

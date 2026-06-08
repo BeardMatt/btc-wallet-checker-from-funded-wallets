@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"btcfind/bitcoin"
 )
 
 type cliConfig struct {
@@ -17,11 +19,14 @@ type cliConfig struct {
 	noColor        bool
 	quiet          bool
 	verbose        bool
+	formats        bitcoin.FormatMask
+	formatsSet     bool
 }
 
 func parseCLI(args []string) (cliConfig, error) {
 	cfg := cliConfig{
 		simulateHitAt: 1,
+		formats:       bitcoin.AllFormats(),
 	}
 
 	var positionals []string
@@ -36,6 +41,24 @@ func parseCLI(args []string) (cliConfig, error) {
 			cfg.quiet = true
 		case arg == "--verbose":
 			cfg.verbose = true
+		case strings.HasPrefix(arg, "--formats="):
+			mask, err := bitcoin.ParseFormatMask(strings.TrimPrefix(arg, "--formats="))
+			if err != nil {
+				return cfg, err
+			}
+			cfg.formats = mask
+			cfg.formatsSet = true
+		case arg == "--formats":
+			if i+1 >= len(args) {
+				return cfg, fmt.Errorf("--formats requires a value")
+			}
+			i++
+			mask, err := bitcoin.ParseFormatMask(args[i])
+			if err != nil {
+				return cfg, err
+			}
+			cfg.formats = mask
+			cfg.formatsSet = true
 		case arg == "--simulate-hit-verify-lookup":
 			cfg.verifyLookup = true
 		case strings.HasPrefix(arg, "--simulate-hit-at="):
@@ -91,6 +114,9 @@ func parseCLI(args []string) (cliConfig, error) {
 		if err := validateInjectBucket(cfg.injectIndexHit); err != nil {
 			return cfg, err
 		}
+		if !bitcoin.InjectBucketAllowed(cfg.formats, cfg.injectIndexHit) {
+			return cfg, fmt.Errorf("inject bucket %q is disabled by --formats %s", cfg.injectIndexHit, cfg.formats.String())
+		}
 	}
 
 	if cfg.verifyLookup && cfg.simulateHitAt > cfg.numKeys {
@@ -123,4 +149,7 @@ func printUsage() {
 	fmt.Fprintln(os.Stderr, "  --no-color                       Disable ANSI colors and live progress")
 	fmt.Fprintln(os.Stderr, "  --quiet                          Minimal startup output (hits and warnings only)")
 	fmt.Fprintln(os.Stderr, "  --verbose                        Verbose bloom filter details at load time")
+	fmt.Fprintln(os.Stderr, "  --formats LIST                   Address types to derive/check (comma-separated)")
+	fmt.Fprintln(os.Stderr, "                                 legacy, legacy-compressed, legacy-uncompressed,")
+	fmt.Fprintln(os.Stderr, "                                 segwit, p2sh, taproot, or all (default: all)")
 }

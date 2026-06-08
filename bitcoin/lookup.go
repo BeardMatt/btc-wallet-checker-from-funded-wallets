@@ -15,21 +15,34 @@ type LookupKeys struct {
 }
 
 func DeriveLookupKeys(privKey *btcec.PrivateKey) LookupKeys {
+	return DeriveLookupKeysMasked(privKey, AllFormats())
+}
+
+func DeriveLookupKeysMasked(privKey *btcec.PrivateKey, mask FormatMask) LookupKeys {
 	pubKey := privKey.PubKey()
-	compressed := pubKey.SerializeCompressed()
 
 	var keys LookupKeys
-	copy(keys.CompressedHash[:], btcutil.Hash160(compressed))
-	copy(keys.UncompressedHash[:], btcutil.Hash160(pubKey.SerializeUncompressed()))
+	if mask.NeedsCompressedPubkeyHash() {
+		compressed := pubKey.SerializeCompressed()
+		copy(keys.CompressedHash[:], btcutil.Hash160(compressed))
+	}
 
-	var redeemScript [22]byte
-	redeemScript[0] = 0x00
-	redeemScript[1] = 0x14
-	copy(redeemScript[2:], keys.CompressedHash[:])
-	copy(keys.P2SHHash[:], btcutil.Hash160(redeemScript[:]))
+	if mask.LegacyUncompressed {
+		copy(keys.UncompressedHash[:], btcutil.Hash160(pubKey.SerializeUncompressed()))
+	}
 
-	tapKey := txscript.ComputeTaprootKeyNoScript(pubKey)
-	copy(keys.TaprootKey[:], schnorr.SerializePubKey(tapKey))
+	if mask.P2SH {
+		var redeemScript [22]byte
+		redeemScript[0] = 0x00
+		redeemScript[1] = 0x14
+		copy(redeemScript[2:], keys.CompressedHash[:])
+		copy(keys.P2SHHash[:], btcutil.Hash160(redeemScript[:]))
+	}
+
+	if mask.Taproot {
+		tapKey := txscript.ComputeTaprootKeyNoScript(pubKey)
+		copy(keys.TaprootKey[:], schnorr.SerializePubKey(tapKey))
+	}
 
 	return keys
 }

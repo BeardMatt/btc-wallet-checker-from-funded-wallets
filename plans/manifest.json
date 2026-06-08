@@ -187,7 +187,7 @@
       "path": "low/10-formats-flag",
       "title": "--formats flag to skip address types",
       "priority": "medium",
-      "status": "pending",
+      "status": "completed",
       "depends_on": [],
       "estimated_gain": "0–50% — omit unused derivations (e.g. taproot-only)"
     },

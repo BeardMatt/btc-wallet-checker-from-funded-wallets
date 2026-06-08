@@ -10,6 +10,21 @@
   "entries": [
     {
       "date": "2026-06-07",
+      "commit": "pending",
+      "plan_id": "low-10",
+      "title": "--formats flag to skip address types",
+      "command": "./btcfind 50000 8",
+      "num_keys": 50000,
+      "threads": 8,
+      "keys_per_second": 57794.68,
+      "hot_loop_seconds": 0.865132,
+      "wall_seconds": 1.676,
+      "startup_seconds": 0.811,
+      "delta_vs_previous": "+1.3%",
+      "notes": "Default --formats all unchanged. Omitting taproot (--formats legacy,segwit,p2sh) ~125k keys/s in spot check."
+    },
+    {
+      "date": "2026-06-07",
       "commit": "2f7dc97",
       "plan_id": "low-16",
       "title": "Verbosity for funded.tsv check at startup",

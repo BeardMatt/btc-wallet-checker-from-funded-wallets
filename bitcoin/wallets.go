@@ -10,6 +10,10 @@ type Wallet struct {
 }
 
 func GenKeypair() Wallet {
+	return GenKeypairMasked(AllFormats())
+}
+
+func GenKeypairMasked(mask FormatMask) Wallet {
 	privKey, err := btcec.NewPrivateKey()
 	if err != nil {
 		panic(err)
@@ -17,6 +21,6 @@ func GenKeypair() Wallet {
 
 	return Wallet{
 		PrivKey: privKey.Serialize(),
-		Keys:    DeriveLookupKeys(privKey),
+		Keys:    DeriveLookupKeysMasked(privKey, mask),
 	}
 }

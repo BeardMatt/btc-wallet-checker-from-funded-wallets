@@ -181,20 +181,20 @@ func inFunded32(set [][32]byte, key [32]byte) bool {
 	return idx < len(set) && set[idx] == key
 }
 
-func matchFunded(sets FundedSets, keys bitcoin.LookupKeys) (bitcoin.MatchKind, bool) {
-	if maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.CompressedHash) {
+func matchFunded(sets FundedSets, keys bitcoin.LookupKeys, mask bitcoin.FormatMask) (bitcoin.MatchKind, bool) {
+	if mask.LegacyCompressed && maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.CompressedHash) {
 		return bitcoin.MatchLegacyCompressed, true
 	}
-	if maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.UncompressedHash) {
+	if mask.LegacyUncompressed && maybeFunded20(sets.LegacyBloom, sets.Legacy, keys.UncompressedHash) {
 		return bitcoin.MatchLegacyUncompressed, true
 	}
-	if maybeFunded20(sets.SegwitV0Bloom, sets.SegwitV0, keys.CompressedHash) {
+	if mask.Segwit && maybeFunded20(sets.SegwitV0Bloom, sets.SegwitV0, keys.CompressedHash) {
 		return bitcoin.MatchSegwitV0, true
 	}
-	if maybeFunded20(sets.P2SHBloom, sets.P2SH, keys.P2SHHash) {
+	if mask.P2SH && maybeFunded20(sets.P2SHBloom, sets.P2SH, keys.P2SHHash) {
 		return bitcoin.MatchP2SH, true
 	}
-	if maybeFunded32(sets.TaprootV1Bloom, sets.TaprootV1, keys.TaprootKey) {
+	if mask.Taproot && maybeFunded32(sets.TaprootV1Bloom, sets.TaprootV1, keys.TaprootKey) {
 		return bitcoin.MatchTaproot, true
 	}
 	return 0, false
