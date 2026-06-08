@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "pending",
+      "commit": "855d1af",
       "plan_id": "low-09",
       "title": "Lazy per-format derivation (taproot last)",
       "command": "./btcfind 50000 8",
