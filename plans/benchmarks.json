@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-07",
-      "commit": "pending",
+      "commit": "88a4934",
       "plan_id": "low-10",
       "title": "--formats flag to skip address types",
       "command": "./btcfind 50000 8",
