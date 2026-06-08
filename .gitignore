@@ -1,5 +1,7 @@
 # --- Build outputs ---
 /btcfind
+/btcfind-coordinator
+/btcfind-worker
 /bin/
 /dist/
 *.exe

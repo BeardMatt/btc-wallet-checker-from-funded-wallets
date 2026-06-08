@@ -10,7 +10,7 @@
   "entries": [
     {
       "date": "2026-06-08",
-      "commit": "pending",
+      "commit": "5d856b3",
       "plan_id": "net-high-01",
       "title": "Distributed search — extract search package + cluster binaries",
       "command": "./btcfind 50000 8",
