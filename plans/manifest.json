@@ -19,6 +19,7 @@
     "low-06",
     "low-07",
     "low-08",
+    "low-16",
     "low-10",
     "low-09",
     "low-15",
@@ -234,6 +235,15 @@
       "status": "pending",
       "depends_on": [],
       "estimated_gain": "2–8% on SHA-NI CPUs; 0% fallback elsewhere"
+    },
+    {
+      "id": "low-16",
+      "path": "low/16-funded-tsv-check-verbosity",
+      "title": "Verbosity for funded.tsv check at startup",
+      "priority": "low",
+      "status": "pending",
+      "depends_on": ["low-07"],
+      "estimated_gain": "UX — show update check and up-to-date status every run"
     }
   ]
 }

@@ -115,7 +115,7 @@ Include `matchKindName` → human label map (`segwit_v0` → `Native SegWit (bc1
 
 **Out of scope for v1:** QR codes, automatic balance lookup from APIs.
 
-**Follow-up:** persisting discoveries to `wallets.txt` — see `low-08`.
+**Follow-up:** persisting discoveries to `wallets.txt` — see `low-08`. Verbose `funded.tsv` update check on every run — see `low-16`.
 
 ### Flags and AGENTS.md
 
