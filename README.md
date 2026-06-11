@@ -145,7 +145,15 @@ Contributions that follow this process (especially performance improvements) are
 
 ## License
 
-TBD / Check repository for license file.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+## Disclaimer
+
+**Critical legal and usage warnings apply to this software.**
+
+This is a research and educational tool for exploring Bitcoin cryptography and high-performance search techniques. The probability of randomly discovering private keys for funded wallets is extremely low.
+
+**You must read and understand the full [DISCLAIMER](DISCLAIMER.md) before using this software.** By downloading, building, or running this project, you acknowledge and accept all terms and restrictions contained in the disclaimer.
 
 ---
 
